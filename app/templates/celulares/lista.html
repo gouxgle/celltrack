@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Celulares - CellTrack{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 style="color: var(--ct-blue);"><i class="fas fa-mobile-alt"></i> Celulares</h4>
+    <a href="{{ url_for('celulares.nuevo') }}" class="btn btn-success btn-sm">
+        <i class="fas fa-plus"></i> Nuevo
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <input type="text" name="q" class="form-control form-control-sm"
+                       placeholder="Buscar IMEI o serie..." value="{{ q }}" autofocus>
+            </div>
+            <div class="col-md-3">
+                <select name="marca" class="form-select form-select-sm">
+                    <option value="">Todas las marcas</option>
+                    {% for m in marcas %}
+                    <option value="{{ m.idmarca }}" {% if m.idmarca == marca_f %}selected{% endif %}>
+                        {{ m.marca.strip() }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="filtro" class="form-select form-select-sm">
+                    <option value="activos"      {% if filtro=='activos' %}selected{% endif %}>Activos</option>
+                    <option value="disponibles"  {% if filtro=='disponibles' %}selected{% endif %}>Disponibles</option>
+                    <option value="baja"         {% if filtro=='baja' %}selected{% endif %}>De baja</option>
+                    <option value="todos"        {% if filtro=='todos' %}selected{% endif %}>Todos</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="fas fa-search"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabla -->
+<div class="card">
+    <div class="card-header">
+        <span>{{ celulares|length }} celulares encontrados</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>IMEI</th>
+                        <th>Serie</th>
+                        <th>Marca / Modelo</th>
+                        <th>Estado</th>
+                        <th>Asignado a</th>
+                        <th>Desde</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for row in celulares %}
+                {% set cel = row.cel %}
+                <tr>
+                    <td class="text-muted small">{{ cel.idcelular }}</td>
+                    <td><code>{{ cel.imei }}</code></td>
+                    <td class="small text-muted">{{ cel.serie.strip() if cel.serie else '-' }}</td>
+                    <td>
+                        {{ row.marca.marca.strip() if row.marca else '-' }}
+                        {% if row.modelo %}<br><small class="text-muted">{{ row.modelo.modelo.strip() }}</small>{% endif %}
+                    </td>
+                    <td>
+                        {% if cel.baja %}
+                            <span class="badge badge-baja">Baja {{ cel.baja.strftime('%d/%m/%Y') }}</span>
+                        {% else %}
+                            <span class="badge badge-activo">Activo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if row.resp %}
+                            <a href="{{ url_for('responsables.ver', id=row.resp.idresponsable) }}" class="text-decoration-none">
+                                {{ row.resp.responsable.strip() }}
+                            </a>
+                        {% elif not cel.baja %}
+                            <span class="badge badge-libre">Disponible</span>
+                        {% else %}
+                            <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="small text-muted">
+                        {{ row.asign.desde.strftime('%d/%m/%Y') if row.asign and row.asign.desde else '-' }}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('celulares.ver', id=cel.idcelular) }}"
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" class="text-center text-muted py-4">Sin resultados</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

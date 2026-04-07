@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - CellTrack{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Tarjetas KPI ─────────────────────────────────────────────────────── */
+.kpi-card {
+    border-radius: 10px;
+    padding: .6rem .8rem;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    animation: fadeInDown .4s ease both;
+}
+.kpi-card .kpi-num  { font-size: 1.7rem; font-weight: 700; line-height: 1; }
+.kpi-card .kpi-lbl  { font-size: .7rem;  opacity: .85; text-transform: uppercase; letter-spacing: .04em; }
+.kpi-card .kpi-sub  { font-size: .68rem; opacity: .75; margin-top: .15rem; }
+.kpi-card .kpi-icon {
+    position: absolute; right: .6rem; top: 50%;
+    transform: translateY(-50%);
+    font-size: 2rem; opacity: .18;
+}
+.kpi-green  { background: linear-gradient(135deg,#2e7d32,#43a047); }
+.kpi-blue   { background: linear-gradient(135deg,#1565c0,#1e88e5); }
+.kpi-red    { background: linear-gradient(135deg,#b71c1c,#e53935); }
+.kpi-grey   { background: linear-gradient(135deg,#455a64,#78909c); }
+
+/* ── Alertas compactas ───────────────────────────────────────────────── */
+.alert-panel {
+    border-radius: 8px;
+    font-size: .78rem;
+    animation: fadeInUp .45s ease both;
+}
+.alert-panel .panel-title {
+    font-size: .72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .04em;
+    padding: .35rem .6rem;
+    border-radius: 7px 7px 0 0;
+}
+.alert-panel .panel-body { max-height: 110px; overflow-y: auto; }
+.alert-panel .list-group-item { padding: .22rem .6rem; font-size: .75rem; }
+
+/* ── Botones acceso rápido ───────────────────────────────────────────── */
+.quick-btn {
+    border-radius: 8px;
+    font-size: .78rem;
+    font-weight: 600;
+    padding: .45rem .3rem;
+    transition: transform .15s, box-shadow .15s;
+    animation: fadeInUp .5s ease both;
+}
+.quick-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+
+/* ── Tabla últimas asignaciones ─────────────────────────────────────── */
+.mini-table th { font-size: .73rem; }
+.mini-table td { font-size: .76rem; padding: .25rem .5rem !important; }
+
+/* ── Barra de sectores ───────────────────────────────────────────────── */
+.sector-bar { height: 6px; border-radius: 3px; }
+
+/* ── Animaciones ─────────────────────────────────────────────────────── */
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.kpi-card:nth-child(1) { animation-delay: .05s; }
+.kpi-card:nth-child(2) { animation-delay: .10s; }
+.kpi-card:nth-child(3) { animation-delay: .15s; }
+.kpi-card:nth-child(4) { animation-delay: .20s; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Fila 1: KPIs ──────────────────────────────────────────────────── -->
+<div class="row g-2 mb-2">
+    <div class="col-6 col-md-3">
+        <div class="kpi-card kpi-green">
+            <div class="kpi-lbl">Celulares activos</div>
+            <div class="kpi-num">{{ cel_activos }}</div>
+            <div class="kpi-sub">
+                <span title="Asignados">&#x1F4CE; {{ cel_asignados }}</span>
+                &nbsp;
+                <span title="Libres">&#x2705; {{ cel_libres }} libres</span>
+            </div>
+            <i class="fas fa-mobile-alt kpi-icon"></i>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="kpi-card kpi-blue">
+            <div class="kpi-lbl">Chips activos</div>
+            <div class="kpi-num">{{ chip_activos }}</div>
+            <div class="kpi-sub">
+                <span title="Asignados">&#x1F4CE; {{ chip_asignados }}</span>
+                &nbsp;
+                <span title="Libres">&#x2705; {{ chip_libres }} libres</span>
+            </div>
+            <i class="fas fa-sim-card kpi-icon"></i>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="kpi-card kpi-red">
+            <div class="kpi-lbl">Celulares de baja</div>
+            <div class="kpi-num">{{ cel_baja }}</div>
+            <div class="kpi-sub">dados de baja</div>
+            <i class="fas fa-times-circle kpi-icon"></i>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="kpi-card kpi-grey">
+            <div class="kpi-lbl">Responsables</div>
+            <div class="kpi-num">{{ resp_total }}</div>
+            <div class="kpi-sub">registrados</div>
+            <i class="fas fa-users kpi-icon"></i>
+        </div>
+    </div>
+</div>
+
+<!-- ── Fila 2: Alertas + Sectores + Acciones ──────────────────────────── -->
+<div class="row g-2 mb-2">
+
+    <!-- Alertas sin chip -->
+    {% if resp_sin_chip %}
+    <div class="col-md-3">
+        <div class="alert-panel card border-0 shadow-sm h-100">
+            <div class="panel-title bg-warning bg-opacity-20 text-warning">
+                <i class="fas fa-exclamation-triangle me-1"></i> Sin chip asignado
+            </div>
+            <div class="panel-body">
+                <ul class="list-group list-group-flush">
+                    {% for r in resp_sin_chip %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center border-0">
+                        <a href="{{ url_for('responsables.ver', id=r.idresponsable) }}"
+                           class="text-decoration-none text-dark">{{ r.responsable.strip() }}</a>
+                        <span class="badge bg-warning text-dark" style="font-size:.6rem;">sin chip</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Disponibles -->
+    <div class="col-md-{% if resp_sin_chip %}3{% else %}4{% endif %}">
+        <div class="row g-2 h-100">
+            {% if cel_libres > 0 %}
+            <div class="col-12">
+                <div class="alert-panel card border-success border-opacity-50 shadow-sm">
+                    <div class="panel-title bg-success bg-opacity-10 text-success">
+                        <i class="fas fa-mobile-alt me-1"></i>
+                        {{ cel_libres }} celular{{ 's' if cel_libres != 1 }} disponible{{ 's' if cel_libres != 1 }}
+                    </div>
+                    <div class="card-body py-2 px-2">
+                        <a href="{{ url_for('celulares.lista', filtro='disponibles') }}"
+                           class="btn btn-success btn-sm w-100" style="font-size:.73rem;">
+                            <i class="fas fa-list me-1"></i> Ver disponibles
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% if chip_libres > 0 %}
+            <div class="col-12">
+                <div class="alert-panel card border-primary border-opacity-50 shadow-sm">
+                    <div class="panel-title bg-primary bg-opacity-10 text-primary">
+                        <i class="fas fa-sim-card me-1"></i>
+                        {{ chip_libres }} chip{{ 's' if chip_libres != 1 }} disponible{{ 's' if chip_libres != 1 }}
+                    </div>
+                    <div class="card-body py-2 px-2">
+                        <a href="{{ url_for('chips.lista', filtro='activos') }}"
+                           class="btn btn-primary btn-sm w-100" style="font-size:.73rem;">
+                            <i class="fas fa-list me-1"></i> Ver disponibles
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Top sectores -->
+    {% if top_sectores %}
+    <div class="col-md-{% if resp_sin_chip %}3{% else %}4{% endif %}">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-header py-2" style="font-size:.73rem; font-weight:700;">
+                <i class="fas fa-building me-1 text-muted"></i> Equipos por sector
+            </div>
+            <div class="card-body py-2 px-3">
+                {% set max_val = top_sectores[0][1] if top_sectores else 1 %}
+                {% for sector, total in top_sectores %}
+                <div class="mb-1">
+                    <div class="d-flex justify-content-between" style="font-size:.7rem;">
+                        <span class="text-truncate" style="max-width:75%;">{{ sector.strip() }}</span>
+                        <strong>{{ total }}</strong>
+                    </div>
+                    <div class="progress sector-bar">
+                        <div class="progress-bar" style="width:{{ (total / max_val * 100)|int }}%;
+                             background:var(--ct-blue);"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Acciones rápidas -->
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header py-2" style="font-size:.73rem; font-weight:700;">
+                <i class="fas fa-bolt me-1 text-muted"></i> Acciones rápidas
+            </div>
+            <div class="card-body py-2 px-2">
+                <div class="row g-1">
+                    <div class="col-6">
+                        <a href="{{ url_for('celulares.nuevo') }}"
+                           class="btn btn-success quick-btn w-100 d-flex flex-column align-items-center">
+                            <i class="fas fa-mobile-alt mb-1"></i> Nuevo<br>Celular
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ url_for('chips.nuevo') }}"
+                           class="btn btn-primary quick-btn w-100 d-flex flex-column align-items-center">
+                            <i class="fas fa-sim-card mb-1"></i> Nuevo<br>Chip
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ url_for('responsables.nuevo') }}"
+                           class="btn btn-outline-secondary quick-btn w-100 d-flex flex-column align-items-center">
+                            <i class="fas fa-user-plus mb-1"></i> Nuevo<br>Responsable
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ url_for('reportes.importar') }}"
+                           class="btn btn-warning quick-btn w-100 d-flex flex-column align-items-center">
+                            <i class="fas fa-upload mb-1"></i> Importar<br>Facturación
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Fila 3: Últimas asignaciones ──────────────────────────────────── -->
+<div class="card shadow-sm border-0" style="animation: fadeInUp .55s ease both;">
+    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+        <span style="font-size:.78rem; font-weight:700;">
+            <i class="fas fa-history me-1 text-muted"></i> Últimas asignaciones activas
+        </span>
+        <a href="{{ url_for('celulares.lista') }}" class="btn btn-sm btn-outline-primary"
+           style="font-size:.7rem; padding:.15rem .5rem;">Ver todos</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 mini-table">
+                <thead>
+                    <tr>
+                        <th>IMEI</th><th>Modelo</th><th>Responsable</th>
+                        <th>Condición</th><th>Desde</th><th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for asign, cel, resp in ultimas %}
+                <tr>
+                    <td><code>{{ cel.imei }}</code></td>
+                    <td>
+                        {{ cel.marca.marca.strip() if cel.marca else '' }}
+                        {{ asign.celular_rel.modelo_rel.modelo.strip() if asign.celular_rel.modelo_rel else '' }}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('responsables.ver', id=resp.idresponsable) }}"
+                           class="text-decoration-none">{{ resp.responsable.strip() }}</a>
+                    </td>
+                    <td><span class="badge badge-activo">{{ asign.condicion or 'BUENO' }}</span></td>
+                    <td class="text-muted">{{ asign.desde.strftime('%d/%m/%Y') if asign.desde else '-' }}</td>
+                    <td>
+                        <a href="{{ url_for('celulares.acta_pdf', asign_id=asign.id) }}"
+                           class="btn btn-outline-danger btn-sm py-0 px-1" target="_blank" title="Acta PDF">
+                            <i class="fas fa-file-pdf"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-muted py-2">Sin asignaciones activas</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

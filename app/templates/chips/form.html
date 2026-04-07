@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if chip else 'Nuevo' }} Chip - CellTrack{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-3">
+    <a href="{{ url_for('chips.lista') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+    <h4 class="mb-0" style="color: var(--ct-blue);">
+        <i class="fas fa-sim-card"></i>
+        {{ 'Editar Chip' if chip else 'Nuevo Chip' }}
+    </h4>
+</div>
+
+<div class="card" style="max-width: 640px;">
+    <div class="card-body p-4">
+        <form method="POST">
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Nro. de Línea <span class="text-danger">*</span></label>
+                <input type="text" name="nrolinea" class="form-control"
+                       value="{{ chip.nrolinea if chip else '' }}"
+                       placeholder="Ej: 3704123456" required autofocus>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Prestadora <span class="text-danger">*</span></label>
+                    <select name="idprestadora" class="form-select" required>
+                        <option value="">Seleccionar...</option>
+                        {% for p in prestadoras %}
+                        <option value="{{ p.idprestadora }}"
+                                {% if chip and chip.idprestadora == p.idprestadora %}selected{% endif %}>
+                            {{ p.prestadora }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Servicio <span class="text-danger">*</span></label>
+                    <select name="idservicio" class="form-select" required>
+                        <option value="">Seleccionar...</option>
+                        {% for s in servicios %}
+                        <option value="{{ s.idservicio }}"
+                                {% if chip and chip.idservicio == s.idservicio %}selected{% endif %}>
+                            {{ s.servicio }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Nro. Chip (SIM)</label>
+                    <input type="text" name="nrochip" class="form-control"
+                           value="{{ chip.nrochip.strip() if chip and chip.nrochip else '' }}"
+                           maxlength="20">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Plan</label>
+                    <input type="text" name="plan" class="form-control"
+                           value="{{ chip.plan.strip() if chip and chip.plan else '' }}"
+                           maxlength="10" placeholder="Ej: PE27C">
+                </div>
+            </div>
+
+            <!-- Descripción: solo para chips de DATOS -->
+            <div id="campoDescripcion" class="mb-3" style="display:none;">
+                <label class="form-label fw-bold">
+                    <i class="fas fa-satellite-dish me-1 text-info"></i>
+                    Descripción / Uso del equipo GPS
+                </label>
+                <input type="text" name="descripcion" class="form-control"
+                       value="{{ chip.descripcion or '' if chip else '' }}"
+                       maxlength="100"
+                       placeholder="Ej: GPS camión cisterna patente ABC123, ruta norte">
+                <div class="form-text text-info">
+                    Los chips de DATOS son para equipos GPS y no se asignan a teléfonos.
+                </div>
+            </div>
+
+            {% if chip %}
+            <!-- ── Estado de la línea (solo en edición) ───────────────────── -->
+            <hr>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Estado de la línea</label>
+                <div class="d-flex gap-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="estado" value="activo"
+                               id="estadoActivo" {% if not chip.baja %}checked{% endif %}
+                               onchange="toggleBaja(false)">
+                        <label class="form-check-label text-success fw-bold" for="estadoActivo">
+                            <i class="fas fa-check-circle"></i> Activa
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="estado" value="baja"
+                               id="estadoBaja" {% if chip.baja %}checked{% endif %}
+                               onchange="toggleBaja(true)">
+                        <label class="form-check-label text-danger fw-bold" for="estadoBaja">
+                            <i class="fas fa-times-circle"></i> De baja
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div id="campoBaja" class="row" style="{{ '' if chip.baja else 'display:none;' }}">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Fecha de baja</label>
+                    <input type="date" name="fecha_baja" class="form-control"
+                           value="{{ chip.baja.strftime('%Y-%m-%d') if chip.baja else '' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Motivo de baja</label>
+                    <select name="idmotivo_baja" class="form-select">
+                        <option value="">Sin especificar</option>
+                        {% for m in motivos %}
+                        <option value="{{ m.idmotivo }}"
+                                {% if chip and chip.idmotivo == m.idmotivo %}selected{% endif %}>
+                            {{ m.motivo }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if chip.baja %}
+                <div class="col-12 mb-2">
+                    <div class="alert alert-warning py-2 small mb-0">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Cambiar a <strong>Activa</strong> reactivará la línea y limpiará la fecha de baja.
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-2 mt-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+                <a href="{{ url_for('chips.ver', id=chip.idchip) if chip else url_for('chips.lista') }}"
+                   class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const ID_SERVICIO_DATOS = {{ servicios | selectattr('servicio', 'equalto', 'DATOS') | map(attribute='idservicio') | first | default(0) }};
+
+function toggleBaja(show) {
+    document.getElementById('campoBaja').style.display = show ? '' : 'none';
+    if (show) {
+        const fechaInput = document.querySelector('input[name=fecha_baja]');
+        if (!fechaInput.value) fechaInput.value = new Date().toISOString().split('T')[0];
+    }
+}
+
+function toggleDescripcion() {
+    const sel = document.querySelector('select[name=idservicio]');
+    const val = parseInt(sel.value);
+    document.getElementById('campoDescripcion').style.display =
+        (val === ID_SERVICIO_DATOS) ? '' : 'none';
+}
+
+document.querySelector('select[name=idservicio]').addEventListener('change', toggleDescripcion);
+
+// Al cargar, si ya es DATOS mostrar el campo
+toggleDescripcion();
+</script>
+{% endblock %}

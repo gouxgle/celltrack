@@ -1,0 +1,26 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: celltrack_web
+    restart: unless-stopped
+    ports:
+      - 5010:5000
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=celltrack_secret_2024
+      - MYSQL_HOST=192.168.0.7
+      - MYSQL_USER=celltrack
+      - MYSQL_PASSWORD=Celulares580
+      - MYSQL_DATABASE=gcel
+      - MYSQL_PORT=3306
+    volumes:
+      - ./app:/app/app
+      - ./logs:/app/logs
+    networks:
+      - celltrack_network
+
+networks:
+  celltrack_network:
+    driver: bridge

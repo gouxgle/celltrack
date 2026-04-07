@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Marcas y Modelos - CellTrack{% endblock %}
+
+{% block content %}
+<h4 class="mb-4" style="color: var(--ct-blue);"><i class="fas fa-tag"></i> Marcas y Modelos</h4>
+
+<div class="row g-3">
+    <!-- Marcas -->
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between">
+                <span>Marcas</span>
+                <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevaMarca">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>#</th><th>Marca</th><th></th></tr></thead>
+                    <tbody>
+                    {% for m in marcas %}
+                    <tr>
+                        <td class="text-muted small">{{ m.idmarca }}</td>
+                        <td>{{ m.marca.strip() }}</td>
+                        <td>
+                            <button class="btn btn-outline-secondary btn-sm"
+                                    onclick="editarMarca({{ m.idmarca }}, '{{ m.marca.strip() }}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modelos -->
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between">
+                <span>Modelos</span>
+                <a href="{{ url_for('catalogos.modelos') }}" class="btn btn-outline-primary btn-sm">
+                    Ver / Agregar modelos
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Marca</th><th>Cód.</th><th>Modelo</th><th>Disponibles</th></tr></thead>
+                    <tbody>
+                    {% for m in marcas %}
+                        {% for mod in m.modelos.order_by('modelo').all() %}
+                        <tr>
+                            <td class="small text-muted">{{ m.marca.strip() }}</td>
+                            <td><code>{{ mod.idmodelo }}</code></td>
+                            <td>{{ mod.modelo.strip() }}</td>
+                            <td class="text-center">
+                                {% if mod.disponibles > 0 %}
+                                    <span class="badge badge-libre">{{ mod.disponibles }}</span>
+                                {% else %}
+                                    <span class="text-muted">0</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal nueva marca -->
+<div class="modal fade" id="modalNuevaMarca" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <form method="POST" action="{{ url_for('catalogos.nueva_marca') }}">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Nueva marca</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <input type="text" name="marca" class="form-control text-uppercase"
+                           placeholder="Nombre de la marca" required autofocus>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success btn-sm">Guardar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal editar marca -->
+<div class="modal fade" id="modalEditarMarca" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <form method="POST" id="formEditarMarca">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Editar marca</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <input type="text" name="marca" id="inputMarca" class="form-control text-uppercase" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function editarMarca(id, nombre) {
+    document.getElementById('formEditarMarca').action = `/catalogos/marcas/${id}/editar`;
+    document.getElementById('inputMarca').value = nombre;
+    new bootstrap.Modal(document.getElementById('modalEditarMarca')).show();
+}
+</script>
+{% endblock %}

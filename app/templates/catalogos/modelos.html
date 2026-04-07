@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Modelos - CellTrack{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-3">
+    <a href="{{ url_for('catalogos.marcas') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+    <h4 class="mb-0" style="color: var(--ct-blue);"><i class="fas fa-tag"></i> Modelos</h4>
+    <button class="btn btn-success btn-sm ms-auto" data-bs-toggle="modal" data-bs-target="#modalNuevo">
+        <i class="fas fa-plus"></i> Nuevo modelo
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+            <thead>
+                <tr><th>Marca</th><th>Código</th><th>Modelo</th><th class="text-center">Disponibles</th></tr>
+            </thead>
+            <tbody>
+            {% for mod, marca in modelos %}
+            <tr>
+                <td>{{ marca.marca.strip() }}</td>
+                <td><code>{{ mod.idmodelo }}</code></td>
+                <td>{{ mod.modelo.strip() }}</td>
+                <td class="text-center">
+                    {% if mod.disponibles > 0 %}
+                        <span class="badge badge-libre">{{ mod.disponibles }}</span>
+                    {% else %}0{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal nuevo modelo -->
+<div class="modal fade" id="modalNuevo" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" action="{{ url_for('catalogos.nuevo_modelo') }}">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Nuevo modelo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Marca</label>
+                        <select name="idmarca" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            {% for m in marcas %}
+                            <option value="{{ m.idmarca }}">{{ m.marca.strip() }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Código <small class="text-muted">(3 chars)</small></label>
+                        <input type="text" name="idmodelo" class="form-control text-uppercase"
+                               maxlength="3" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombre del modelo</label>
+                        <input type="text" name="modelo" class="form-control text-uppercase"
+                               maxlength="20" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

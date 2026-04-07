@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+{% block title %}Chip #{{ chip.idchip }} - CellTrack{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-3">
+    <a href="{{ url_for('chips.lista') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+    <h4 class="mb-0" style="color: var(--ct-blue);">
+        <i class="fas fa-sim-card"></i> Chip #{{ chip.idchip }} — {{ chip.nrolinea }}
+    </h4>
+    <a href="{{ url_for('chips.editar', id=chip.idchip) }}" class="btn btn-outline-primary btn-sm ms-auto">
+        <i class="fas fa-edit"></i> Editar
+    </a>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-5">
+        <div class="card h-100">
+            <div class="card-header">Datos del chip</div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><th width="35%">Nro. Línea</th><td><strong>{{ chip.nrolinea }}</strong></td></tr>
+                    <tr><th>Prestadora</th><td>{{ chip.prestadora.prestadora }}</td></tr>
+                    <tr><th>Servicio</th><td>{{ chip.servicio.servicio }}</td></tr>
+                    <tr><th>Plan</th><td>{{ chip.plan or '-' }}</td></tr>
+                    <tr><th>Nro. SIM</th><td class="small">{{ chip.nrochip.strip() if chip.nrochip else '-' }}</td></tr>
+                    {% if chip.servicio.servicio.strip().upper() == 'DATOS' %}
+                    <tr>
+                        <th>Tipo</th>
+                        <td><span class="badge bg-info text-dark"><i class="fas fa-satellite-dish me-1"></i>Datos / GPS</span></td>
+                    </tr>
+                    <tr><th>Descripción</th><td class="small">{{ chip.descripcion or '—' }}</td></tr>
+                    {% endif %}
+                    <tr>
+                        <th>Estado</th>
+                        <td>
+                            {% if chip.baja %}
+                                <span class="badge badge-baja">Baja {{ chip.baja.strftime('%d/%m/%Y') }}</span>
+                                {% if chip.motivo %}<br><small>{{ chip.motivo.motivo }}</small>{% endif %}
+                            {% else %}
+                                <span class="badge badge-activo">Activo</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-7">
+        {% set es_datos = chip.servicio.servicio.strip().upper() == 'DATOS' %}
+        {% set asign_actual = chip.asignacion_actual %}
+        {% if es_datos %}
+        <div class="card mb-3 border-info">
+            <div class="card-header bg-info bg-opacity-10 text-info fw-bold">
+                <i class="fas fa-satellite-dish me-1"></i> Chip de Datos / GPS
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-2">
+                    Este chip es de tipo <strong>DATOS</strong> y se utiliza exclusivamente en equipos GPS.
+                    No se asigna a responsables de telefonía.
+                </p>
+                {% if chip.descripcion %}
+                <div class="alert alert-info py-2 small mb-0">
+                    <i class="fas fa-info-circle me-1"></i> <strong>Uso:</strong> {{ chip.descripcion }}
+                </div>
+                {% else %}
+                <div class="text-muted small">Sin descripción de uso cargada.
+                    <a href="{{ url_for('chips.editar', id=chip.idchip) }}">Agregar descripción</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="card mb-3">
+            <div class="card-header">Asignación actual</div>
+            <div class="card-body">
+                {% if asign_actual %}
+                    {% set resp = asign_actual.responsable_chip %}
+                    <div class="mb-2">
+                        <strong>
+                            <a href="{{ url_for('responsables.ver', id=resp.idresponsable) }}">
+                                {{ resp.responsable.strip() }}
+                            </a>
+                        </strong>
+                    </div>
+                    <div class="small text-muted mb-3">
+                        Desde {{ asign_actual.desde.strftime('%d/%m/%Y') if asign_actual.desde else '?' }}
+                    </div>
+                    {% if not chip.baja %}
+                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalDevolver">
+                        <i class="fas fa-undo"></i> Registrar devolución
+                    </button>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted mb-3">Sin asignación activa.</p>
+                    {% if not chip.baja %}
+                    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalAsignar">
+                        <i class="fas fa-user-plus"></i> Asignar a responsable
+                    </button>
+                    {% endif %}
+                {% endif %}
+
+                {% if not chip.baja %}
+                <button class="btn btn-danger btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#modalBaja">
+                    <i class="fas fa-times-circle"></i> Dar de baja
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}{# fin bloque no-datos #}
+    </div>
+</div>
+
+{% if not es_datos %}
+<!-- Historial -->
+<div class="card mt-3">
+    <div class="card-header"><i class="fas fa-history me-1"></i> Historial de asignaciones</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr><th>Responsable</th><th>Condición</th><th>Desde</th><th>Hasta</th><th>Motivo</th></tr>
+                </thead>
+                <tbody>
+                {% for rx, resp in historial %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('responsables.ver', id=resp.idresponsable) }}">
+                            {{ resp.responsable.strip() }}
+                        </a>
+                    </td>
+                    <td class="small text-muted">{{ rx.condicion or '—' }}</td>
+                    <td>{{ rx.desde.strftime('%d/%m/%Y') if rx.desde else '-' }}</td>
+                    <td>
+                        {% if rx.hasta %}{{ rx.hasta.strftime('%d/%m/%Y') }}
+                        {% else %}<span class="badge badge-activo">Activo</span>{% endif %}
+                    </td>
+                    <td class="small text-muted">{{ rx.motivo_rel.motivo if rx.motivo_rel else '-' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center text-muted py-3">Sin historial</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}{# fin bloque historial/modales no-datos #}
+
+<!-- Modal: Asignar -->
+<div class="modal fade" id="modalAsignar" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" action="{{ url_for('chips.asignar', id=chip.idchip) }}">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Asignar chip</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Responsable</label>
+                        <select id="selectResponsable" name="idresponsable" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            {% for r in responsables_disponibles %}
+                            <option value="{{ r.idresponsable }}">{{ r.responsable.strip() }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-7 mb-3">
+                            <label class="form-label fw-bold">Fecha desde</label>
+                            <input type="date" name="desde" class="form-control">
+                        </div>
+                        <div class="col-5 mb-3">
+                            <label class="form-label fw-bold">Condición</label>
+                            <select name="condicion" class="form-select">
+                                <option value="NUEVO">Nuevo</option>
+                                <option value="BUENO" selected>Bueno</option>
+                                <option value="REGULAR">Regular</option>
+                                <option value="DETERIORADO">Deteriorado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Observaciones</label>
+                        <textarea name="observaciones" class="form-control" rows="2"
+                                  placeholder="Notas adicionales..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check"></i> Asignar
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Devolver -->
+{% if asign_actual %}
+<div class="modal fade" id="modalDevolver" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" action="{{ url_for('chips.devolver', asign_id=asign_actual.id) }}">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Registrar devolución</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Fecha de devolución</label>
+                        <input type="date" name="hasta" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Motivo (opcional)</label>
+                        <select name="idmotivo" class="form-select">
+                            <option value="">Sin motivo</option>
+                            {% for m in motivos %}
+                            <option value="{{ m.idmotivo }}">{{ m.motivo }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Confirmar devolución</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal: Baja -->
+<div class="modal fade" id="modalBaja" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" action="{{ url_for('chips.dar_baja', id=chip.idchip) }}">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Dar de baja</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Dar de baja el chip con línea <strong>{{ chip.nrolinea }}</strong>?</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Motivo</label>
+                        <select name="idmotivo" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            {% for m in motivos %}
+                            <option value="{{ m.idmotivo }}">{{ m.motivo }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Dar de baja</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('input[type=date]').forEach(el => {
+    if (!el.value) el.value = new Date().toISOString().split('T')[0];
+});
+
+// Select2 con dropdownParent en el modal para que el campo de búsqueda funcione
+$('#modalAsignar').on('shown.bs.modal', function () {
+    $('#selectResponsable').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        dropdownParent: $('#modalAsignar'),
+        placeholder: 'Escribí nombre para buscar...',
+        allowClear: true,
+        language: { noResults: function() { return 'Sin resultados'; } }
+    }).focus();
+    // Abrir el dropdown y enfocar la búsqueda automáticamente
+    $('#selectResponsable').select2('open');
+});
+
+$('#modalAsignar').on('hidden.bs.modal', function () {
+    if ($('#selectResponsable').data('select2')) {
+        $('#selectResponsable').select2('destroy');
+    }
+});
+</script>
+{% endblock %}

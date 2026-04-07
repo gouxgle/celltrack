@@ -1,0 +1,10 @@
+flask>=3.0
+flask-login
+flask-sqlalchemy
+flask-migrate
+pymysql==1.1.1
+werkzeug
+fpdf2
+openpyxl
+cryptography
+gunicorn

@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Logs
+logs/
+*.log
+
+# Entorno virtual
+venv/
+.env
+.env.*
+
+# Credenciales / config sensible
+config.py
+
+# Docker
+*.tar.gz
+
+# Claude Code
+.claude/
+
+# Backups y temporales
+bkp/
+*.html~
+*.css~
+*.py~
+
+# Archivos legacy (proyecto anterior)
+modulos/
+conexiones.py
+app.py
+run.py
+formprin.html
+static/style-bkp.css
+static/Logo_REFSA_bkp.jpg
+/templates/
+
+# OS
+.DS_Store
+Thumbs.db

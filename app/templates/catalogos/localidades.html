@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Localidades - CellTrack{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 style="color: var(--ct-blue);"><i class="fas fa-map-marker-alt"></i> Localidades</h4>
+    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevo">
+        <i class="fas fa-plus"></i> Nueva
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+            <thead><tr><th>Cod.</th><th>Localidad</th><th>Distrito</th></tr></thead>
+            <tbody>
+            {% for loc, dis in localidades %}
+            <tr>
+                <td><code>{{ loc.codigo }}</code></td>
+                <td>{{ loc.localidad.strip() }}</td>
+                <td class="text-muted small">{{ dis.distrito }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="modalNuevo" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" action="{{ url_for('catalogos.nueva_localidad') }}">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Nueva localidad</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombre</label>
+                        <input type="text" name="localidad" class="form-control text-uppercase" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Código <small class="text-muted">(3 chars)</small></label>
+                        <input type="text" name="codigo" class="form-control text-uppercase" maxlength="3" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Distrito</label>
+                        <select name="iddistrito" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            {% for d in distritos %}
+                            <option value="{{ d.iddistrito }}">{{ d.distrito }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
