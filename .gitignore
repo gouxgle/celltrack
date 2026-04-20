@@ -31,7 +31,6 @@ bkp/
 modulos/
 conexiones.py
 app.py
-run.py
 formprin.html
 static/style-bkp.css
 static/Logo_REFSA_bkp.jpg
