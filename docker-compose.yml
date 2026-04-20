@@ -18,6 +18,7 @@ services:
     volumes:
       - ./app:/app/app
       - ./logs:/app/logs
+      - ./config.py:/app/config.py
     networks:
       - celltrack_network
 
