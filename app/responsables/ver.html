@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}{{ resp.responsable.strip() }} - CellTrack{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="{{ url_for('responsables.lista') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+    <div class="d-flex align-items-center gap-3">
+        <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#0d47a1,#00b4d8);display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(0,180,216,.25);flex-shrink:0;">
+            <span style="color:#fff;font-weight:900;font-size:1.2rem;">{{ resp.responsable.strip()[0]|upper }}</span>
+        </div>
+        <div>
+            <h2 class="ct-page-title mb-0">{{ resp.responsable.strip() }}</h2>
+            <p class="ct-page-sub mb-0">{{ sec.sector.strip() }} &middot; {{ loc.localidad.strip() }}</p>
+        </div>
+    </div>
+    <a href="{{ url_for('responsables.editar', id=resp.idresponsable) }}"
+       class="btn btn-outline-primary btn-sm ms-auto">
+        <i class="fas fa-edit me-1"></i> Editar
+    </a>
+</div>
+
+<!-- Info cards -->
+<div class="row g-3 mb-3">
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:4px;">Localidad</div>
+                        <div style="font-weight:700;font-size:.96rem;color:#0d1b2e;">{{ loc.localidad.strip() }}</div>
+                    </div>
+                    <div class="col-6" style="border-left:1px solid #f1f5f9;">
+                        <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:4px;">Sector</div>
+                        <div style="font-weight:700;font-size:.96rem;color:#0d1b2e;">{{ sec.sector.strip() }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div style="background:linear-gradient(135deg,#0d47a1,#1e88e5);border-radius:16px;padding:18px;color:#fff;text-align:center;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <div style="font-size:2.2rem;font-weight:900;line-height:1;">{{ cel_activos|length }}</div>
+            <div style="font-size:.74rem;opacity:.85;margin-top:4px;">Celulares</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div style="background:linear-gradient(135deg,#00b4d8,#0ea5e9);border-radius:16px;padding:18px;color:#fff;text-align:center;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <div style="font-size:2.2rem;font-weight:900;line-height:1;">{{ chip_activos|length }}</div>
+            <div style="font-size:.74rem;opacity:.85;margin-top:4px;">Chips</div>
+        </div>
+    </div>
+</div>
+
+<!-- Celulares activos -->
+<div class="card mb-3">
+    <div class="card-header">
+        <i class="fas fa-mobile-alt me-1" style="color:#0d47a1;"></i> Celulares asignados actualmente
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>IMEI</th>
+                    <th>Marca / Modelo</th>
+                    <th>Desde</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for cx, cel, marca, modelo in cel_activos %}
+            <tr>
+                <td>
+                    <code style="background:#f1f5f9;padding:2px 7px;border-radius:5px;font-size:.78rem;color:#475569;">
+                        {{ cel.imei }}
+                    </code>
+                </td>
+                <td>
+                    <span style="font-weight:600;color:#0d1b2e;">{{ marca.marca.strip() }}</span>
+                    <span style="color:#64748b;"> {{ modelo.modelo.strip() if modelo else '' }}</span>
+                </td>
+                <td style="color:#64748b;font-size:.82rem;">{{ cx.desde.strftime('%d/%m/%Y') if cx.desde else '-' }}</td>
+                <td>
+                    <a href="{{ url_for('celulares.ver', id=cel.idcelular) }}"
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye me-1"></i>Ver
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="text-center py-3" style="color:#94a3b8;font-size:.86rem;">Sin celulares asignados</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Chips activos -->
+<div class="card mb-3">
+    <div class="card-header">
+        <i class="fas fa-sim-card me-1" style="color:#00b4d8;"></i> Chips asignados actualmente
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Nro. Línea</th>
+                    <th>Prestadora</th>
+                    <th>Plan</th>
+                    <th>Desde</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for rx, chip, prest in chip_activos %}
+            <tr>
+                <td style="font-weight:700;color:#0d1b2e;">{{ chip.nrolinea }}</td>
+                <td>{{ prest.prestadora }}</td>
+                <td style="color:#94a3b8;font-size:.82rem;">{{ chip.plan or '-' }}</td>
+                <td style="color:#64748b;font-size:.82rem;">{{ rx.desde.strftime('%d/%m/%Y') if rx.desde else '-' }}</td>
+                <td>
+                    <a href="{{ url_for('chips.ver', id=chip.idchip) }}"
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye me-1"></i>Ver
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center py-3" style="color:#94a3b8;font-size:.86rem;">Sin chips asignados</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Historial -->
+{% if hist_cel or hist_chip %}
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-history me-1 text-muted"></i> Historial de asignaciones anteriores
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Tipo</th>
+                    <th>Equipo</th>
+                    <th>Desde</th>
+                    <th>Hasta</th>
+                    <th>Motivo</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for cx, cel, marca, modelo in hist_cel %}
+            <tr>
+                <td>
+                    <span style="background:#eff6ff;color:#0d47a1;padding:3px 9px;border-radius:20px;font-size:.72rem;font-weight:700;">
+                        <i class="fas fa-mobile-alt me-1"></i>Celular
+                    </span>
+                </td>
+                <td>
+                    <div style="font-size:.84rem;font-weight:500;color:#0d1b2e;">{{ marca.marca.strip() }} {{ modelo.modelo.strip() if modelo else '' }}</div>
+                    <code style="font-size:.72rem;color:#94a3b8;background:#f1f5f9;padding:1px 5px;border-radius:3px;">{{ cel.imei }}</code>
+                </td>
+                <td style="font-size:.8rem;color:#64748b;">{{ cx.desde.strftime('%d/%m/%Y') if cx.desde else '-' }}</td>
+                <td style="font-size:.8rem;color:#64748b;">{{ cx.hasta.strftime('%d/%m/%Y') if cx.hasta else '-' }}</td>
+                <td style="font-size:.78rem;color:#94a3b8;">{{ cx.motivo_rel.motivo if cx.motivo_rel else '-' }}</td>
+            </tr>
+            {% endfor %}
+            {% for rx, chip, prest in hist_chip %}
+            <tr>
+                <td>
+                    <span style="background:#ecfeff;color:#0891b2;padding:3px 9px;border-radius:20px;font-size:.72rem;font-weight:700;">
+                        <i class="fas fa-sim-card me-1"></i>Chip
+                    </span>
+                </td>
+                <td style="font-size:.84rem;color:#0d1b2e;">{{ prest.prestadora }} — {{ chip.nrolinea }}</td>
+                <td style="font-size:.8rem;color:#64748b;">{{ rx.desde.strftime('%d/%m/%Y') if rx.desde else '-' }}</td>
+                <td style="font-size:.8rem;color:#64748b;">{{ rx.hasta.strftime('%d/%m/%Y') if rx.hasta else '-' }}</td>
+                <td style="font-size:.78rem;color:#94a3b8;">{{ rx.motivo_rel.motivo if rx.motivo_rel else '-' }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

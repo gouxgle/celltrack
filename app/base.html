@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CellTrack - REFSA{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
+    <style>
+        /* ── TOKENS ─────────────────────────────────────────────── */
+        :root {
+            --ct-blue:        #0d47a1;
+            --ct-blue-mid:    #1565c0;
+            --ct-blue-light:  #1e88e5;
+            --ct-blue-tint:   #e3f2fd;
+            --ct-cyan:        #00b4d8;
+            --ct-green:       #2e7d32;
+            --ct-orange:      #e65100;
+            --ct-violet:      #7c3aed;
+            --ct-red:         #dc2626;
+            --ct-slate:       #0d1b2e;
+            --ct-page-bg:     #f0f4f8;
+            --ct-sidebar-bg:  #ffffff;
+            --ct-card-bg:     #ffffff;
+            --ct-border:      #e8edf2;
+            --ct-border-soft: #f1f5f9;
+            --ct-text:        #0d1b2e;
+            --ct-muted:       #64748b;
+            --ct-subtle:      #94a3b8;
+        }
+
+        /* ── BASE ───────────────────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--ct-page-bg);
+            color: var(--ct-text);
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--ct-border-soft); }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+        /* ── NAVBAR ─────────────────────────────────────────────── */
+        .ct-navbar {
+            height: 60px;
+            background: #fff;
+            border-bottom: 1px solid var(--ct-border);
+            display: flex;
+            align-items: center;
+            padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 1px 8px rgba(13,71,161,.07);
+        }
+        .ct-navbar .ct-brand {
+            width: 220px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 20px;
+            border-right: 1px solid var(--ct-border);
+            height: 100%;
+            flex-shrink: 0;
+            text-decoration: none;
+        }
+        .ct-navbar .ct-brand-icon {
+            width: 34px; height: 34px;
+            background: linear-gradient(135deg, var(--ct-blue), var(--ct-cyan));
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 14px rgba(0,180,216,.3);
+            flex-shrink: 0;
+        }
+        .ct-navbar .ct-brand-icon i { color: #fff; font-size: 15px; }
+        .ct-navbar .ct-brand-name { font-size: .95rem; font-weight: 800; color: var(--ct-slate); line-height: 1; }
+        .ct-navbar .ct-brand-sub  { font-size: .62rem; color: var(--ct-cyan); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+        .ct-navbar .ct-nav-right  { margin-left: auto; display: flex; align-items: center; gap: 16px; padding-right: 20px; }
+        .ct-status-badge {
+            display: flex; align-items: center; gap: 6px;
+            background: #f0fdf4; border: 1px solid #bbf7d0;
+            border-radius: 20px; padding: 4px 12px;
+            font-size: .72rem; font-weight: 600; color: #16a34a;
+        }
+        .ct-status-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: #22c55e; box-shadow: 0 0 6px #22c55e;
+            animation: ct-pulse-green 2s infinite;
+        }
+        @keyframes ct-pulse-green {
+            0%,100% { box-shadow: 0 0 6px #22c55e; }
+            50%      { box-shadow: 0 0 14px #22c55e; }
+        }
+        .ct-user-avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--ct-blue), var(--ct-cyan));
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: .8rem; font-weight: 700;
+            flex-shrink: 0;
+        }
+        .ct-user-name  { font-size: .8rem; font-weight: 700; color: var(--ct-slate); line-height: 1; }
+        .ct-user-role  { font-size: .65rem; color: var(--ct-subtle); }
+        .ct-logout-btn {
+            background: #f8fafc; border: 1.5px solid var(--ct-border);
+            color: var(--ct-muted); border-radius: 8px;
+            padding: 5px 12px; font-size: .78rem; font-weight: 600;
+            cursor: pointer; font-family: inherit; transition: all .15s;
+            text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
+        }
+        .ct-logout-btn:hover { border-color: #fca5a5; color: var(--ct-red); }
+
+        /* ── SIDEBAR ────────────────────────────────────────────── */
+        .ct-sidebar {
+            width: 220px;
+            background: #fff;
+            border-right: 1px solid var(--ct-border);
+            padding: 12px 0;
+            flex-shrink: 0;
+            position: sticky;
+            top: 60px;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+        }
+        .ct-nav-section {
+            font-size: .62rem; font-weight: 800;
+            text-transform: uppercase; letter-spacing: .1em;
+            color: var(--ct-subtle);
+            padding: 8px 16px 4px;
+            margin-top: 4px;
+        }
+        .ct-nav-link {
+            width: 100%; display: flex; align-items: center; gap: 10px;
+            padding: 8px 16px; border: none; background: none;
+            cursor: pointer; font-family: inherit; text-align: left;
+            color: #475569; font-size: .85rem; font-weight: 500;
+            text-decoration: none; transition: color .15s;
+            position: relative;
+        }
+        .ct-nav-link .ct-nav-icon {
+            width: 30px; height: 30px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; transition: all .15s;
+        }
+        .ct-nav-link .ct-nav-icon i { font-size: .82rem; color: var(--ct-subtle); transition: color .15s; }
+        .ct-nav-link .ct-nav-dot {
+            margin-left: auto; width: 6px; height: 6px;
+            border-radius: 50%; background: var(--ct-cyan);
+            box-shadow: 0 0 8px var(--ct-cyan); display: none;
+        }
+        .ct-nav-link:hover { color: var(--ct-blue); }
+        .ct-nav-link:hover .ct-nav-icon { background: rgba(13,71,161,.06); }
+        .ct-nav-link:hover .ct-nav-icon i { color: var(--ct-blue); }
+        .ct-nav-link.active {
+            color: var(--ct-blue); font-weight: 700;
+        }
+        .ct-nav-link.active::before {
+            content: '';
+            position: absolute; left: 0; top: 6px; bottom: 6px;
+            width: 3px;
+            background: linear-gradient(var(--ct-blue), var(--ct-cyan));
+            border-radius: 0 3px 3px 0;
+        }
+        .ct-nav-link.active .ct-nav-icon {
+            background: linear-gradient(135deg, rgba(13,71,161,.12), rgba(0,180,216,.12));
+            box-shadow: 0 0 12px rgba(0,180,216,.2);
+        }
+        .ct-nav-link.active .ct-nav-icon i { color: var(--ct-blue); }
+        .ct-nav-link.active .ct-nav-dot { display: block; }
+
+        /* ── MAIN CONTENT ───────────────────────────────────────── */
+        .ct-main { flex: 1; padding: 24px; min-width: 0; }
+        .ct-page-title {
+            font-size: 1.4rem; font-weight: 800;
+            color: var(--ct-slate); letter-spacing: -.02em;
+        }
+        .ct-page-sub { color: var(--ct-muted); font-size: .82rem; margin-top: 3px; }
+
+        /* ── CARDS ──────────────────────────────────────────────── */
+        .card {
+            border: 1px solid var(--ct-border) !important;
+            box-shadow: 0 2px 12px rgba(13,71,161,.07) !important;
+            border-radius: 16px !important;
+        }
+        .card-header {
+            background: #fff !important;
+            border-bottom: 1px solid var(--ct-border-soft) !important;
+            font-weight: 700 !important;
+            font-size: .88rem !important;
+            border-radius: 16px 16px 0 0 !important;
+            padding: 12px 18px !important;
+        }
+
+        /* ── BADGES ─────────────────────────────────────────────── */
+        .badge-activo {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: #f0fdf4; color: #16a34a;
+            padding: 3px 10px; border-radius: 20px;
+            font-size: .74rem; font-weight: 700;
+        }
+        .badge-activo::before {
+            content: ''; width: 6px; height: 6px; border-radius: 50%;
+            background: #22c55e; box-shadow: 0 0 5px #22c55e;
+        }
+        .badge-baja {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: #fff1f2; color: #dc2626;
+            padding: 3px 10px; border-radius: 20px;
+            font-size: .74rem; font-weight: 700;
+        }
+        .badge-baja::before {
+            content: ''; width: 6px; height: 6px; border-radius: 50%;
+            background: #f87171;
+        }
+        .badge-libre {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: #eff6ff; color: #1d4ed8;
+            padding: 3px 10px; border-radius: 20px;
+            font-size: .74rem; font-weight: 700;
+        }
+        .badge-libre::before {
+            content: ''; width: 6px; height: 6px; border-radius: 50%;
+            background: #3b82f6;
+        }
+        .badge-asignado {
+            background: #fffbeb; color: #d97706;
+            padding: 3px 10px; border-radius: 20px;
+            font-size: .74rem; font-weight: 700;
+        }
+
+        /* ── TABLES ─────────────────────────────────────────────── */
+        .table th {
+            font-size: .72rem; color: var(--ct-subtle);
+            font-weight: 700; text-transform: uppercase;
+            letter-spacing: .06em; white-space: nowrap;
+            padding: 10px 16px !important;
+            background: #f8fafc;
+        }
+        .table td { font-size: .86rem; vertical-align: middle; padding: 11px 16px !important; }
+        .table-hover tbody tr:hover { background: #f8fafc !important; }
+        .table tbody tr { border-top: 1px solid var(--ct-border-soft); }
+
+        /* ── BUTTONS ────────────────────────────────────────────── */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--ct-blue), var(--ct-cyan)) !important;
+            border: none !important;
+            box-shadow: 0 4px 16px rgba(0,180,216,.25) !important;
+            font-weight: 700 !important; border-radius: 10px !important;
+        }
+        .btn-primary:hover { opacity: .9 !important; }
+        .btn-success {
+            background: var(--ct-green) !important;
+            border: none !important;
+            font-weight: 700 !important; border-radius: 10px !important;
+        }
+        .btn-outline-primary {
+            border: 1.5px solid #bfdbfe !important;
+            color: var(--ct-blue) !important;
+            background: #f0f7ff !important;
+            font-weight: 600 !important; border-radius: 8px !important;
+        }
+        .btn-outline-primary:hover {
+            background: var(--ct-blue) !important;
+            color: #fff !important;
+        }
+        .btn-outline-secondary {
+            border: 1.5px solid var(--ct-border) !important;
+            color: var(--ct-muted) !important;
+            background: #f8fafc !important;
+            border-radius: 8px !important;
+        }
+        .btn-warning {
+            background: #d97706 !important; border: none !important;
+            color: #fff !important; font-weight: 700 !important;
+            border-radius: 10px !important;
+        }
+        .btn-danger {
+            background: var(--ct-red) !important; border: none !important;
+            font-weight: 700 !important; border-radius: 10px !important;
+        }
+
+        /* ── FORM CONTROLS ──────────────────────────────────────── */
+        .form-control, .form-select {
+            border: 1.5px solid var(--ct-border) !important;
+            border-radius: 8px !important;
+            font-family: inherit !important;
+            font-size: .86rem !important;
+            color: var(--ct-text) !important;
+            transition: border-color .15s !important;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--ct-cyan) !important;
+            box-shadow: 0 0 0 3px rgba(0,180,216,.12) !important;
+        }
+        .form-label { font-weight: 700; font-size: .78rem; color: #475569; text-transform: uppercase; letter-spacing: .06em; }
+
+        /* ── ALERTS (flash) ─────────────────────────────────────── */
+        .alert {
+            border-radius: 10px !important;
+            border: none !important;
+            font-size: .86rem !important;
+        }
+        .alert-success  { background: #f0fdf4 !important; color: #15803d !important; border: 1px solid #bbf7d0 !important; }
+        .alert-danger   { background: #fff1f2 !important; color: #dc2626 !important; border: 1px solid #fecaca !important; }
+        .alert-warning  { background: #fffbeb !important; color: #d97706 !important; border: 1px solid #fde68a !important; }
+        .alert-info     { background: #eff6ff !important; color: #1d4ed8 !important; border: 1px solid #bfdbfe !important; }
+
+        /* ── MODALS ─────────────────────────────────────────────── */
+        .modal-content {
+            border: none !important;
+            border-radius: 20px !important;
+            box-shadow: 0 20px 60px rgba(13,27,46,.2) !important;
+            overflow: hidden;
+        }
+        .modal-header {
+            border-bottom: 1px solid var(--ct-border-soft) !important;
+            padding: 16px 20px !important;
+        }
+        .modal-footer {
+            border-top: 1px solid var(--ct-border-soft) !important;
+            padding: 12px 20px !important;
+        }
+        .modal-backdrop { backdrop-filter: blur(4px); }
+
+        /* ── PAGE TRANSITION ────────────────────────────────────── */
+        .ct-main { animation: ct-fade-in .2s ease; }
+        @keyframes ct-fade-in {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- ── Navbar ─────────────────────────────────────────────────────── -->
+<header class="ct-navbar">
+    <a class="ct-brand" href="{{ url_for('main.dashboard') }}">
+        <div class="ct-brand-icon"><i class="fas fa-sim-card"></i></div>
+        <div>
+            <div class="ct-brand-name">CellTrack</div>
+            <div class="ct-brand-sub">REFSA</div>
+        </div>
+    </a>
+    <div class="ct-nav-right">
+        <div class="ct-status-badge d-none d-md-flex">
+            <div class="ct-status-dot"></div>
+            Sistema activo
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <div class="ct-user-avatar">{{ current_user.nombre[0]|upper }}</div>
+            <div class="d-none d-md-block">
+                <div class="ct-user-name">{{ current_user.nombre }}</div>
+                <div class="ct-user-role">{% if current_user.admin %}Administrador{% else %}Operador{% endif %}</div>
+            </div>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" class="ct-logout-btn">
+            <i class="fas fa-sign-out-alt"></i> <span class="d-none d-md-inline">Salir</span>
+        </a>
+    </div>
+</header>
+
+<!-- ── Layout ─────────────────────────────────────────────────────── -->
+<div style="display:flex;">
+
+    <!-- Sidebar -->
+    <aside class="ct-sidebar d-none d-md-block">
+
+        <div class="ct-nav-section">Principal</div>
+        <a class="ct-nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}"
+           href="{{ url_for('main.dashboard') }}">
+            <span class="ct-nav-icon"><i class="fas fa-chart-pie"></i></span>
+            Dashboard
+            <span class="ct-nav-dot"></span>
+        </a>
+
+        <div class="ct-nav-section">Inventario</div>
+        <a class="ct-nav-link {% if request.blueprint == 'celulares' %}active{% endif %}"
+           href="{{ url_for('celulares.lista') }}">
+            <span class="ct-nav-icon"><i class="fas fa-mobile-alt"></i></span>
+            Celulares
+            <span class="ct-nav-dot"></span>
+        </a>
+        <a class="ct-nav-link {% if request.blueprint == 'chips' %}active{% endif %}"
+           href="{{ url_for('chips.lista') }}">
+            <span class="ct-nav-icon"><i class="fas fa-sim-card"></i></span>
+            Chips / SIM
+            <span class="ct-nav-dot"></span>
+        </a>
+
+        <div class="ct-nav-section">Personas</div>
+        <a class="ct-nav-link {% if request.blueprint == 'responsables' %}active{% endif %}"
+           href="{{ url_for('responsables.lista') }}">
+            <span class="ct-nav-icon"><i class="fas fa-users"></i></span>
+            Responsables
+            <span class="ct-nav-dot"></span>
+        </a>
+
+        <div class="ct-nav-section">Reportes</div>
+        <a class="ct-nav-link {% if request.endpoint == 'reportes.index' %}active{% endif %}"
+           href="{{ url_for('reportes.index') }}">
+            <span class="ct-nav-icon"><i class="fas fa-file-invoice-dollar"></i></span>
+            Facturación
+            <span class="ct-nav-dot"></span>
+        </a>
+        <a class="ct-nav-link {% if request.endpoint == 'reportes.por_localidad' %}active{% endif %}"
+           href="{{ url_for('reportes.por_localidad') }}">
+            <span class="ct-nav-icon"><i class="fas fa-map-marked-alt"></i></span>
+            Por Localidad
+            <span class="ct-nav-dot"></span>
+        </a>
+
+        <div class="ct-nav-section">Sistema</div>
+        <a class="ct-nav-link {% if request.blueprint == 'auditoria' %}active{% endif %}"
+           href="{{ url_for('auditoria.index') }}">
+            <span class="ct-nav-icon"><i class="fas fa-shield-alt"></i></span>
+            Auditoría
+            <span class="ct-nav-dot"></span>
+        </a>
+        {% if current_user.admin %}
+        <a class="ct-nav-link {% if request.blueprint == 'operadores' %}active{% endif %}"
+           href="{{ url_for('operadores.lista') }}">
+            <span class="ct-nav-icon"><i class="fas fa-user-cog"></i></span>
+            Operadores
+            <span class="ct-nav-dot"></span>
+        </a>
+        {% endif %}
+
+        <div class="ct-nav-section">Catálogos</div>
+        <a class="ct-nav-link {% if request.endpoint == 'catalogos.marcas' %}active{% endif %}"
+           href="{{ url_for('catalogos.marcas') }}">
+            <span class="ct-nav-icon"><i class="fas fa-tags"></i></span>
+            Marcas / Modelos
+            <span class="ct-nav-dot"></span>
+        </a>
+        <a class="ct-nav-link {% if request.endpoint == 'catalogos.sectores' %}active{% endif %}"
+           href="{{ url_for('catalogos.sectores') }}">
+            <span class="ct-nav-icon"><i class="fas fa-building"></i></span>
+            Sectores
+            <span class="ct-nav-dot"></span>
+        </a>
+        <a class="ct-nav-link {% if request.endpoint == 'catalogos.localidades' %}active{% endif %}"
+           href="{{ url_for('catalogos.localidades') }}">
+            <span class="ct-nav-icon"><i class="fas fa-map-marker-alt"></i></span>
+            Localidades
+            <span class="ct-nav-dot"></span>
+        </a>
+
+    </aside>
+
+    <!-- Main content -->
+    <main class="ct-main">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for cat, msg in messages %}
+            <div class="alert alert-{{ cat }} alert-dismissible fade show mb-3" role="alert">
+                {{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+</div><!-- /layout -->
+
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

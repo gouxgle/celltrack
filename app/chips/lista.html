@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Chips / SIM - CellTrack{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Segmented tab control */
+.ct-tab-group {
+    display: inline-flex; gap: 4px;
+    background: #e2e8f0; border-radius: 12px;
+    padding: 4px; margin-bottom: 16px;
+}
+.ct-tab-btn {
+    padding: 7px 18px; border-radius: 9px;
+    font-size: .84rem; font-weight: 500;
+    color: #64748b; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 7px;
+    transition: all .15s;
+}
+.ct-tab-btn.active {
+    background: #fff;
+    color: #0d47a1; font-weight: 700;
+    box-shadow: 0 1px 5px rgba(13,71,161,.1);
+}
+.ct-tab-count {
+    padding: 1px 7px; border-radius: 4px;
+    font-size: .72rem; font-weight: 700;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h2 class="ct-page-title">
+            <i class="fas fa-sim-card me-2" style="color:#00b4d8;"></i>Chips / SIM
+        </h2>
+        <p class="ct-page-sub">Gestión de líneas y SIM cards</p>
+    </div>
+    <a href="{{ url_for('chips.nuevo') }}" class="btn btn-success">
+        <i class="fas fa-plus me-1"></i> Nuevo chip
+    </a>
+</div>
+
+<!-- Tabs segmentados -->
+<div class="ct-tab-group">
+    <a href="{{ url_for('chips.lista') }}"
+       class="ct-tab-btn {% if tab != 'datos' %}active{% endif %}">
+        <i class="fas fa-mobile-alt"></i> Telefonía
+        <span class="ct-tab-count" style="background:{% if tab != 'datos' %}#e3f2fd;color:#0d47a1;{% else %}#e2e8f0;color:#64748b;{% endif %}">
+            {{ total_telefonia }}
+        </span>
+    </a>
+    <a href="{{ url_for('chips.lista', tab='datos') }}"
+       class="ct-tab-btn {% if tab == 'datos' %}active{% endif %}">
+        <i class="fas fa-satellite-dish"></i> Datos / GPS
+        <span class="ct-tab-count" style="background:{% if tab == 'datos' %}#ecfeff;color:#0891b2;{% else %}#e2e8f0;color:#64748b;{% endif %}">
+            {{ total_datos }}
+        </span>
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-3">
+    <div class="card-body py-2 px-3">
+        <form method="GET" class="row g-2 align-items-center">
+            <input type="hidden" name="tab" value="{{ tab }}">
+            <div class="col-md-4">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-right:none;">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" name="q" class="form-control"
+                           style="border-left:none !important;"
+                           placeholder="Nro. línea o chip..." value="{{ q }}" autofocus>
+                </div>
+            </div>
+            {% if tab != 'datos' %}
+            <div class="col-md-3">
+                <select name="prestadora" class="form-select form-select-sm">
+                    <option value="">Todas las prestadoras</option>
+                    {% for p in prestadoras %}
+                    <option value="{{ p.idprestadora }}" {% if p.idprestadora == prestadora_f %}selected{% endif %}>
+                        {{ p.prestadora }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <div class="col-md-3">
+                <select name="filtro" class="form-select form-select-sm">
+                    <option value="activos"     {% if filtro=='activos' %}selected{% endif %}>Activos</option>
+                    <option value="disponibles" {% if filtro=='disponibles' %}selected{% endif %}>Disponibles</option>
+                    <option value="baja"        {% if filtro=='baja' %}selected{% endif %}>De baja</option>
+                    <option value="todos"       {% if filtro=='todos' %}selected{% endif %}>Todos</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="fas fa-search me-1"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabla -->
+<div class="card">
+    <div class="card-header">{{ chips|length }} chips encontrados</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Nro. Línea</th>
+                        <th>Prestadora</th>
+                        {% if tab == 'datos' %}
+                        <th>Descripción / Uso GPS</th>
+                        {% else %}
+                        <th>Servicio</th>
+                        <th>Plan</th>
+                        {% endif %}
+                        <th>Estado</th>
+                        <th>{% if tab == 'datos' %}Nro. SIM{% else %}Asignado a{% endif %}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for row in chips %}
+                {% set chip = row.chip %}
+                <tr>
+                    <td style="color:#cbd5e1;font-size:.78rem;">{{ chip.idchip }}</td>
+                    <td style="font-weight:700;font-size:.88rem;color:#0d1b2e;">{{ chip.nrolinea }}</td>
+                    <td>
+                        <span style="padding:3px 10px;border-radius:20px;font-size:.74rem;font-weight:700;
+                            {% if row.prest.prestadora == 'Claro' %}background:#ffebee;color:#e53935;
+                            {% elif row.prest.prestadora == 'Personal' %}background:#eff6ff;color:#0d47a1;
+                            {% elif row.prest.prestadora == 'Movistar' %}background:#e0f7fa;color:#0097a7;
+                            {% else %}background:#f1f5f9;color:#475569;{% endif %}">
+                            {{ row.prest.prestadora }}
+                        </span>
+                    </td>
+                    {% if tab == 'datos' %}
+                    <td style="font-size:.8rem;color:#64748b;">{{ chip.descripcion or '—' }}</td>
+                    {% else %}
+                    <td style="font-size:.82rem;">{{ row.serv.servicio }}</td>
+                    <td style="font-size:.8rem;color:#94a3b8;">{{ chip.plan or '-' }}</td>
+                    {% endif %}
+                    <td>
+                        {% if chip.baja %}
+                            <span class="badge-baja">Baja</span>
+                        {% else %}
+                            <span class="badge-activo">Activo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if tab == 'datos' %}
+                            <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:.74rem;color:#475569;">
+                                {{ chip.nrochip.strip() if chip.nrochip else '-' }}
+                            </code>
+                        {% elif row.resp %}
+                            <a href="{{ url_for('responsables.ver', id=row.resp.idresponsable) }}"
+                               class="text-decoration-none fw-600" style="color:#0d47a1;">
+                                {{ row.resp.responsable.strip() }}
+                            </a>
+                        {% else %}
+                            <span class="badge-libre">Disponible</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('chips.ver', id=chip.idchip) }}"
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-eye me-1"></i>Ver
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center py-5" style="color:#94a3b8;">
+                        <i class="fas fa-inbox d-block mb-2" style="font-size:2rem;"></i>
+                        Sin resultados
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
