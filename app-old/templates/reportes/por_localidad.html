@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Líneas por Localidad - CellTrack{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 style="color: var(--ct-blue);">
+        <i class="fas fa-map-marker-alt"></i> Líneas por Localidad
+    </h4>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('reportes.exportar_por_localidad') }}" class="btn btn-success btn-sm">
+            <i class="fas fa-file-excel"></i> Exportar Excel
+        </a>
+        <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-print"></i> Imprimir
+        </button>
+        <a href="{{ url_for('reportes.index') }}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-chart-bar"></i> Facturación
+        </a>
+    </div>
+</div>
+
+<!-- Resumen -->
+<div class="card mb-3">
+    <div class="card-body py-2 d-flex gap-4 flex-wrap">
+        <div>
+            <span class="text-muted small">Localidades</span>
+            <div class="fw-bold">{{ grupos|length }}</div>
+        </div>
+        <div>
+            <span class="text-muted small">Total líneas</span>
+            <div class="fw-bold">{{ total_lineas }}</div>
+        </div>
+        <div>
+            <span class="text-muted small">Activas</span>
+            <div class="fw-bold text-success">{{ total_activas }}</div>
+        </div>
+        <div>
+            <span class="text-muted small">De baja</span>
+            <div class="fw-bold text-danger">{{ total_lineas - total_activas }}</div>
+        </div>
+    </div>
+</div>
+
+{% if grupos %}
+{% for localidad, datos in grupos.items() %}
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center py-2"
+         style="background: var(--ct-blue); color: white;">
+        <div>
+            <i class="fas fa-map-pin me-1"></i>
+            <strong>{{ localidad }}</strong>
+            {% if datos.distrito %}
+                <span class="opacity-75 ms-2 small">— {{ datos.distrito }}</span>
+            {% endif %}
+        </div>
+        <span class="badge bg-white text-dark">{{ datos.lineas|length }} línea{{ 's' if datos.lineas|length != 1 }}</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nro. Línea</th>
+                        <th>Prestadora</th>
+                        <th>Servicio</th>
+                        <th>Plan</th>
+                        <th>Responsable</th>
+                        <th>Sector</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for r in datos.lineas %}
+                <tr class="{{ 'table-light text-muted' if r.baja and r.baja not in ('', '0000-00-00') else '' }}">
+                    <td>
+                        {% if r.idchip %}
+                            <a href="{{ url_for('chips.ver', id=r.idchip) }}" class="text-decoration-none fw-bold">
+                                {{ r.nrolinea }}
+                            </a>
+                        {% else %}
+                            <strong>{{ r.nrolinea }}</strong>
+                        {% endif %}
+                    </td>
+                    <td class="small">{{ r.prestadora or '-' }}</td>
+                    <td class="small">{{ r.servicio or '-' }}</td>
+                    <td class="small">{{ r.plan or '-' }}</td>
+                    <td class="small">
+                        {% if r.responsable %}
+                            {{ r.responsable }}
+                        {% else %}
+                            <span class="text-muted">Sin asignar</span>
+                        {% endif %}
+                    </td>
+                    <td class="small text-muted">{{ r.sector or '-' }}</td>
+                    <td>
+                        {% if not r.baja or r.baja in ('', '0000-00-00') %}
+                            <span class="badge badge-activo">Activa</span>
+                        {% else %}
+                            <span class="badge badge-baja">Baja</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="alert alert-info">
+    <i class="fas fa-info-circle me-1"></i>
+    No hay líneas registradas.
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+@media print {
+    .btn, nav, .sidebar, footer { display: none !important; }
+    .card { break-inside: avoid; }
+    .card-header { background: #2c3e50 !important; color: white !important; -webkit-print-color-adjust: exact; }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% block title %}Celular #{{ cel.idcelular }} - CellTrack{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-3">
+    <a href="{{ url_for('celulares.lista') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+    <h4 class="mb-0" style="color: var(--ct-blue);">
+        <i class="fas fa-mobile-alt"></i> Celular #{{ cel.idcelular }}
+    </h4>
+    {% if not cel.baja %}
+    <a href="{{ url_for('celulares.editar', id=cel.idcelular) }}" class="btn btn-outline-primary btn-sm ms-auto">
+        <i class="fas fa-edit"></i> Editar
+    </a>
+    {% endif %}
+</div>
+
+<div class="row g-3">
+    <!-- Datos del celular -->
+    <div class="col-md-5">
+        <div class="card h-100">
+            <div class="card-header">Datos del equipo</div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><th width="35%">IMEI</th><td><code>{{ cel.imei }}</code></td></tr>
+                    <tr><th>Serie</th><td>{{ cel.serie.strip() if cel.serie else '-' }}</td></tr>
+                    <tr><th>Marca</th><td>{{ marca.marca.strip() if marca else '-' }}</td></tr>
+                    <tr><th>Modelo</th><td>{{ modelo.modelo.strip() if modelo else cel.idmodelo }}</td></tr>
+                    <tr>
+                        <th>Estado</th>
+                        <td>
+                            {% if cel.baja %}
+                                <span class="badge badge-baja">Baja {{ cel.baja.strftime('%d/%m/%Y') }}</span>
+                                {% if cel.motivo %}<br><small>{{ cel.motivo.motivo }}</small>{% endif %}
+                            {% else %}
+                                <span class="badge badge-activo">Activo</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Asignación actual + acciones -->
+    <div class="col-md-7">
+        {% set asign_actual = cel.asignacion_actual %}
+        <div class="card mb-3">
+            <div class="card-header">Asignación actual</div>
+            <div class="card-body">
+                {% if asign_actual %}
+                    {% set resp = asign_actual.responsable_cel %}
+                    <div class="mb-2">
+                        <strong>
+                            <a href="{{ url_for('responsables.ver', id=resp.idresponsable) }}">
+                                {{ resp.responsable.strip() }}
+                            </a>
+                        </strong>
+                    </div>
+                    <div class="small text-muted mb-3">
+                        Desde {{ asign_actual.desde.strftime('%d/%m/%Y') if asign_actual.desde else '?' }}
+                    </div>
+
+                    {% if not cel.baja %}
+                    <!-- Devolver -->
+                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalDevolver">
+                        <i class="fas fa-undo"></i> Registrar devolución
+                    </button>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted mb-3">Sin asignación activa.</p>
+                    {% if not cel.baja %}
+                    <!-- Asignar -->
+                    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalAsignar">
+                        <i class="fas fa-user-plus"></i> Asignar a responsable
+                    </button>
+                    {% endif %}
+                {% endif %}
+
+                {% if not cel.baja %}
+                <button class="btn btn-danger btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#modalBaja">
+                    <i class="fas fa-times-circle"></i> Dar de baja
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Historial -->
+<div class="card mt-3">
+    <div class="card-header"><i class="fas fa-history me-1"></i> Historial de asignaciones</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr><th>Responsable</th><th>Condición</th><th>Desde</th><th>Hasta</th><th>Motivo</th><th></th></tr>
+                </thead>
+                <tbody>
+                {% for cx, resp in historial %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('responsables.ver', id=resp.idresponsable) }}">
+                            {{ resp.responsable.strip() }}
+                        </a>
+                    </td>
+                    <td class="small text-muted">{{ cx.condicion or '—' }}</td>
+                    <td>{{ cx.desde.strftime('%d/%m/%Y') if cx.desde else '-' }}</td>
+                    <td>
+                        {% if cx.hasta %}
+                            {{ cx.hasta.strftime('%d/%m/%Y') }}
+                        {% else %}
+                            <span class="badge badge-activo">Activo</span>
+                        {% endif %}
+                    </td>
+                    <td class="small text-muted">{{ cx.motivo_rel.motivo if cx.motivo_rel else '-' }}</td>
+                    <td>
+                        <a href="{{ url_for('celulares.acta_pdf', asign_id=cx.id) }}"
+                           class="btn btn-outline-danger btn-sm" target="_blank" title="Acta PDF">
+                            <i class="fas fa-file-pdf"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center text-muted py-3">Sin historial</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Asignar -->
+<div class="modal fade" id="modalAsignar" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" action="{{ url_for('celulares.asignar', id=cel.idcelular) }}">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Asignar celular</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Responsable</label>
+                        <select id="selectResponsableCel" name="idresponsable" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            {% for r in responsables_libres %}
+                            <option value="{{ r.idresponsable }}">{{ r.responsable.strip() }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-7 mb-3">
+                            <label class="form-label fw-bold">Fecha desde</label>
+                            <input type="date" name="desde" class="form-control">
+                        </div>
+                        <div class="col-5 mb-3">
+                            <label class="form-label fw-bold">Condición</label>
+                            <select name="condicion" class="form-select">
+                                <option value="NUEVO">Nuevo</option>
+                                <option value="BUENO" selected>Bueno</option>
+                                <option value="REGULAR">Regular</option>
+                                <option value="DETERIORADO">Deteriorado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Observaciones</label>
+                        <textarea name="observaciones" class="form-control" rows="2"
+                                  placeholder="Accesorios entregados, estado particular, etc."></textarea>
+                    </div>
+                    <div class="alert alert-info py-2 small mb-0">
+                        <i class="fas fa-file-pdf me-1"></i>
+                        Al confirmar se generará automáticamente el <strong>Acta de Entrega PDF</strong>.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check"></i> Asignar y generar acta
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Devolver -->
+{% if asign_actual %}
+<div class="modal fade" id="modalDevolver" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" action="{{ url_for('celulares.devolver', asign_id=asign_actual.id) }}">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Registrar devolución</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Fecha de devolución</label>
+                        <input type="date" name="hasta" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Motivo (opcional)</label>
+                        <select name="idmotivo" class="form-select">
+                            <option value="">Sin motivo</option>
+                            {% for m in motivos %}
+                            <option value="{{ m.idmotivo }}">{{ m.motivo }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Confirmar devolución</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal: Dar de baja -->
+<div class="modal fade" id="modalBaja" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" action="{{ url_for('celulares.dar_baja', id=cel.idcelular) }}">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Dar de baja</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Dar de baja el celular IMEI <strong>{{ cel.imei }}</strong>?</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Motivo</label>
+                        <select name="idmotivo" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            {% for m in motivos %}
+                            <option value="{{ m.idmotivo }}">{{ m.motivo }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Dar de baja</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('input[type=date]').forEach(el => {
+    if (!el.value) el.value = new Date().toISOString().split('T')[0];
+});
+
+$('#modalAsignar').on('shown.bs.modal', function () {
+    $('#selectResponsableCel').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        dropdownParent: $('#modalAsignar'),
+        placeholder: 'Escribí nombre para buscar...',
+        allowClear: true,
+        language: { noResults: function() { return 'Sin resultados'; } }
+    }).focus();
+    $('#selectResponsableCel').select2('open');
+});
+
+$('#modalAsignar').on('hidden.bs.modal', function () {
+    if ($('#selectResponsableCel').data('select2')) {
+        $('#selectResponsableCel').select2('destroy');
+    }
+});
+</script>
+{% endblock %}

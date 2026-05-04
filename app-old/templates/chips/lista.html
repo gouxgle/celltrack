@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Chips / SIM - CellTrack{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 style="color: var(--ct-blue);"><i class="fas fa-sim-card"></i> Chips / SIM</h4>
+    <a href="{{ url_for('chips.nuevo') }}" class="btn btn-success btn-sm">
+        <i class="fas fa-plus"></i> Nuevo
+    </a>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-3" id="chipsTabs">
+    <li class="nav-item">
+        <a class="nav-link {% if tab != 'datos' %}active{% endif %}"
+           href="{{ url_for('chips.lista') }}">
+            <i class="fas fa-mobile-alt me-1"></i> Telefonía
+            <span class="badge bg-secondary ms-1">{{ total_telefonia }}</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if tab == 'datos' %}active{% endif %}"
+           href="{{ url_for('chips.lista', tab='datos') }}">
+            <i class="fas fa-satellite-dish me-1"></i> Datos / GPS
+            <span class="badge bg-info ms-1">{{ total_datos }}</span>
+        </a>
+    </li>
+</ul>
+
+<!-- Filtros -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="GET" class="row g-2 align-items-end">
+            <input type="hidden" name="tab" value="{{ tab }}">
+            <div class="col-md-3">
+                <input type="text" name="q" class="form-control form-control-sm"
+                       placeholder="Nro. línea o chip..." value="{{ q }}" autofocus>
+            </div>
+            {% if tab != 'datos' %}
+            <div class="col-md-3">
+                <select name="prestadora" class="form-select form-select-sm">
+                    <option value="">Todas las prestadoras</option>
+                    {% for p in prestadoras %}
+                    <option value="{{ p.idprestadora }}" {% if p.idprestadora == prestadora_f %}selected{% endif %}>
+                        {{ p.prestadora }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <div class="col-md-3">
+                <select name="filtro" class="form-select form-select-sm">
+                    <option value="activos" {% if filtro=='activos' %}selected{% endif %}>Activos</option>
+                    <option value="disponibles" {% if filtro=='disponibles' %}selected{% endif %}>Disponibles</option>
+                    <option value="baja"    {% if filtro=='baja' %}selected{% endif %}>De baja</option>
+                    <option value="todos"   {% if filtro=='todos' %}selected{% endif %}>Todos</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="fas fa-search"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">{{ chips|length }} chips encontrados</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Nro. Línea</th>
+                        <th>Prestadora</th>
+                        {% if tab == 'datos' %}
+                        <th>Descripción / Uso GPS</th>
+                        {% else %}
+                        <th>Servicio</th>
+                        <th>Plan</th>
+                        {% endif %}
+                        <th>Estado</th>
+                        <th>{% if tab == 'datos' %}Nro. SIM{% else %}Asignado a{% endif %}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for row in chips %}
+                {% set chip = row.chip %}
+                <tr>
+                    <td class="text-muted small">{{ chip.idchip }}</td>
+                    <td><strong>{{ chip.nrolinea }}</strong></td>
+                    <td>{{ row.prest.prestadora }}</td>
+                    {% if tab == 'datos' %}
+                    <td class="small text-muted">{{ chip.descripcion or '—' }}</td>
+                    {% else %}
+                    <td class="small">{{ row.serv.servicio }}</td>
+                    <td class="small text-muted">{{ chip.plan or '-' }}</td>
+                    {% endif %}
+                    <td>
+                        {% if chip.baja %}
+                            <span class="badge badge-baja">Baja</span>
+                        {% else %}
+                            <span class="badge badge-activo">Activo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if tab == 'datos' %}
+                            <span class="small text-muted">{{ chip.nrochip.strip() if chip.nrochip else '-' }}</span>
+                        {% elif row.resp %}
+                            <a href="{{ url_for('responsables.ver', id=row.resp.idresponsable) }}" class="text-decoration-none">
+                                {{ row.resp.responsable.strip() }}
+                            </a>
+                        {% else %}
+                            <span class="badge badge-libre">Disponible</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('chips.ver', id=chip.idchip) }}"
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" class="text-center text-muted py-4">Sin resultados</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if cel else 'Nuevo' }} Celular - CellTrack{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-3">
+    <a href="{{ url_for('celulares.lista') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+    <h4 class="mb-0" style="color: var(--ct-blue);">
+        <i class="fas fa-mobile-alt"></i>
+        {{ 'Editar Celular' if cel else 'Nuevo Celular' }}
+    </h4>
+</div>
+
+<form method="POST">
+<div class="row g-3">
+
+    <!-- ── Datos del equipo ───────────────────────────────────────────────── -->
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header"><i class="fas fa-mobile-alt me-1"></i> Datos del equipo</div>
+            <div class="card-body">
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">IMEI <span class="text-danger">*</span></label>
+                    <input type="text" name="imei" class="form-control"
+                           value="{{ cel.imei if cel else '' }}"
+                           maxlength="15" placeholder="15 dígitos" required autofocus>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Número de serie</label>
+                    <input type="text" name="serie" class="form-control"
+                           value="{{ cel.serie.strip() if cel and cel.serie else '' }}"
+                           maxlength="20">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Marca <span class="text-danger">*</span></label>
+                    <select name="idmarca" id="idmarca" class="form-select" required>
+                        <option value="">Seleccionar...</option>
+                        {% for m in marcas %}
+                        <option value="{{ m.idmarca }}"
+                                {% if cel and cel.idmarca == m.idmarca %}selected{% endif %}>
+                            {{ m.marca.strip() }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Modelo <span class="text-danger">*</span></label>
+                    <select name="idmodelo" id="idmodelo" class="form-select" required>
+                        <option value="">{{ 'Cargando...' if cel else 'Primero elegí una marca' }}</option>
+                        {% if cel %}
+                        <option value="{{ cel.idmodelo }}" selected>
+                            {{ cel.modelo_rel.modelo.strip() if cel.modelo_rel else cel.idmodelo }}
+                        </option>
+                        {% endif %}
+                    </select>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                    <a href="{{ url_for('celulares.ver', id=cel.idcelular) if cel else url_for('celulares.lista') }}"
+                       class="btn btn-outline-secondary">Cancelar</a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Asignación inicial (solo en nuevo) ────────────────────────────── -->
+    {% if not cel %}
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header">
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="checkbox" id="cbAsignar">
+                    <label class="form-check-label fw-bold" for="cbAsignar">
+                        <i class="fas fa-user-plus me-1"></i> Asignar al responsable al crear
+                    </label>
+                </div>
+            </div>
+            <div class="card-body" id="seccionAsignar" style="display:none;">
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Responsable <span class="text-danger">*</span></label>
+                    <select name="idresponsable" id="idresponsable" class="form-select select2">
+                        <option value="">Seleccionar...</option>
+                        {% for r in responsables %}
+                        <option value="{{ r.idresponsable }}">{{ r.responsable.strip() }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Línea / Chip del responsable</label>
+                    <select name="idchip" id="idchip" class="form-select" disabled>
+                        <option value="">— Seleccionar responsable primero —</option>
+                    </select>
+                    <div class="form-text">Solo se muestran las líneas activas ya asignadas a este responsable.</div>
+                </div>
+
+                <!-- Alerta: chip con teléfono activo -->
+                <div id="alertaReemplazo" class="alert alert-warning py-2 d-none">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    Esta línea ya tiene asignado el equipo <strong id="infoTelViejo"></strong>.
+                    Al guardar, ese equipo quedará <strong>dado de baja</strong> y este lo reemplazará.
+                    <div class="mt-2">
+                        <label class="form-label fw-bold mb-1">Motivo de baja del equipo anterior</label>
+                        <select name="idmotivo_reemplazo" class="form-select form-select-sm">
+                            <option value="">Sin especificar</option>
+                            {% for m in motivos %}
+                            <option value="{{ m.idmotivo }}">{{ m.motivo }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <label class="form-label fw-bold">Fecha desde</label>
+                        <input type="date" name="desde" id="desde" class="form-control">
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label class="form-label fw-bold">Condición</label>
+                        <select name="condicion" class="form-select">
+                            <option value="NUEVO">Nuevo</option>
+                            <option value="BUENO" selected>Bueno</option>
+                            <option value="REGULAR">Regular</option>
+                            <option value="DETERIORADO">Deteriorado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label fw-bold">Observaciones</label>
+                    <textarea name="observaciones" class="form-control" rows="2"
+                              placeholder="Notas adicionales..."></textarea>
+                </div>
+
+            </div>
+            <div class="card-body pt-0" id="seccionAsignarOff">
+                <p class="text-muted small mb-0">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Activá la opción para asignar el equipo a un responsable y vincular una línea en este mismo paso.
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const marcaActual  = "{{ cel.idmarca if cel else '' }}";
+const modeloActual = "{{ cel.idmodelo if cel else '' }}";
+
+// ── Marca → Modelo ─────────────────────────────────────────────────────────
+$('#idmarca').on('change', function() {
+    const id = $(this).val();
+    if (!id) { $('#idmodelo').html('<option value="">Primero elegí una marca</option>'); return; }
+    $.getJSON(`/celulares/modelos/${id}`, function(data) {
+        let opts = '<option value="">Seleccionar modelo...</option>';
+        data.forEach(m => {
+            const sel = m.idmodelo === modeloActual ? 'selected' : '';
+            opts += `<option value="${m.idmodelo}" ${sel}>${m.modelo}</option>`;
+        });
+        $('#idmodelo').html(opts);
+    });
+});
+if (marcaActual) $('#idmarca').trigger('change');
+
+// ── Toggle sección asignación ──────────────────────────────────────────────
+$('#cbAsignar').on('change', function() {
+    if (this.checked) {
+        $('#seccionAsignar').show();
+        $('#seccionAsignarOff').hide();
+        $('#idresponsable').prop('required', true);
+        $('#desde').val(new Date().toISOString().split('T')[0]);
+    } else {
+        $('#seccionAsignar').hide();
+        $('#seccionAsignarOff').show();
+        $('#idresponsable').prop('required', false).val('').trigger('change');
+        $('#alertaReemplazo').addClass('d-none');
+    }
+});
+
+// ── Responsable → carga sus chips ─────────────────────────────────────────
+$('#idresponsable').on('change', function() {
+    const id = $(this).val();
+    $('#idchip').html('<option value="">Cargando...</option>').prop('disabled', true);
+    $('#alertaReemplazo').addClass('d-none');
+    if (!id) {
+        $('#idchip').html('<option value="">— Seleccionar responsable primero —</option>');
+        return;
+    }
+    $.getJSON(`/celulares/api/responsable/${id}/chips`, function(data) {
+        let opts = '<option value="">Sin vincular línea</option>';
+        data.forEach(c => {
+            const plan = c.plan ? ` (${c.plan})` : '';
+            opts += `<option value="${c.idchip}">${c.nrolinea}${plan}</option>`;
+        });
+        $('#idchip').html(opts).prop('disabled', false);
+    }).fail(function() {
+        $('#idchip').html('<option value="">Sin líneas disponibles</option>').prop('disabled', false);
+    });
+});
+
+// ── Chip seleccionado → verifica si tiene teléfono activo ─────────────────
+$('#idchip').on('change', function() {
+    const id = $(this).val();
+    $('#alertaReemplazo').addClass('d-none');
+    if (!id) return;
+    $.getJSON(`/celulares/api/chip/${id}/celular-activo`, function(data) {
+        if (data.encontrado) {
+            $('#infoTelViejo').text(`${data.marca} — IMEI: ${data.imei}`);
+            $('#alertaReemplazo').removeClass('d-none');
+        }
+    });
+});
+
+// ── Select2 ───────────────────────────────────────────────────────────────
+$('.select2').select2({ theme: 'bootstrap-5', width: '100%' });
+</script>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Auditoría - CellTrack{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-3">
+    <h4 class="mb-0" style="color: var(--ct-blue);">
+        <i class="fas fa-history"></i> Registro de Auditoría
+    </h4>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label small fw-bold mb-1">Entidad</label>
+                <select name="entidad" class="form-select form-select-sm">
+                    <option value="">Todas</option>
+                    {% for e in entidades %}
+                    <option value="{{ e }}" {% if entidad_f == e %}selected{% endif %}>{{ e|capitalize }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold mb-1">Acción</label>
+                <select name="accion" class="form-select form-select-sm">
+                    <option value="">Todas</option>
+                    {% for a in acciones %}
+                    <option value="{{ a }}" {% if accion_f == a %}selected{% endif %}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold mb-1">Usuario</label>
+                <input type="text" name="usuario" class="form-control form-control-sm"
+                       value="{{ usuario_f }}" placeholder="Buscar usuario...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-bold mb-1">Detalle</label>
+                <input type="text" name="q" class="form-control form-control-sm"
+                       value="{{ q }}" placeholder="Buscar en detalle...">
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="fas fa-search"></i> Filtrar
+                </button>
+                <a href="{{ url_for('auditoria.index') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-times"></i> Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabla -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha / Hora</th>
+                        <th>Usuario</th>
+                        <th>Acción</th>
+                        <th>Entidad</th>
+                        <th>ID</th>
+                        <th>Detalle</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% if registros.items %}
+                    {% for reg in registros.items %}
+                    <tr>
+                        <td class="text-nowrap text-muted small">{{ reg.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td><span class="fw-bold small">{{ reg.usuario }}</span></td>
+                        <td>
+                            {% set badge = {
+                                'CREAR':    'success',
+                                'EDITAR':   'primary',
+                                'BAJA':     'danger',
+                                'ASIGNAR':  'warning',
+                                'DEVOLVER': 'info',
+                                'IMPORTAR': 'secondary'
+                            } %}
+                            <span class="badge bg-{{ badge.get(reg.accion, 'secondary') }}">
+                                {{ reg.accion }}
+                            </span>
+                        </td>
+                        <td class="small text-capitalize">{{ reg.entidad }}</td>
+                        <td class="small text-muted">{{ reg.id_entidad or '—' }}</td>
+                        <td class="small text-muted" style="max-width:400px; word-break:break-word;">
+                            {{ reg.detalle or '—' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                            No hay registros para los filtros seleccionados.
+                        </td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Paginación -->
+{% if registros.pages > 1 %}
+<nav class="mt-3">
+    <ul class="pagination pagination-sm justify-content-center">
+        {% if registros.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('auditoria.index', page=registros.prev_num,
+                entidad=entidad_f, accion=accion_f, usuario=usuario_f, q=q) }}">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+        </li>
+        {% endif %}
+
+        {% for p in registros.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if p %}
+            <li class="page-item {% if p == registros.page %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('auditoria.index', page=p,
+                    entidad=entidad_f, accion=accion_f, usuario=usuario_f, q=q) }}">{{ p }}</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
+        {% endfor %}
+
+        {% if registros.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('auditoria.index', page=registros.next_num,
+                entidad=entidad_f, accion=accion_f, usuario=usuario_f, q=q) }}">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+    <p class="text-center text-muted small">
+        Mostrando {{ registros.items|length }} de {{ registros.total }} registros
+    </p>
+</nav>
+{% endif %}
+
+{% endblock %}

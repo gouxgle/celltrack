@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Facturación - CellTrack{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 style="color: var(--ct-blue);"><i class="fas fa-chart-bar"></i> Reporte de Facturación</h4>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('reportes.exportar_facturacion') }}" class="btn btn-success btn-sm">
+            <i class="fas fa-file-excel"></i> Exportar Excel
+        </a>
+        <a href="{{ url_for('reportes.importar') }}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-upload"></i> Importar xlsx
+        </a>
+    </div>
+</div>
+
+{% if rows %}
+<div class="card mb-3">
+    <div class="card-body py-2 d-flex gap-4">
+        <div>
+            <span class="text-muted small">Total líneas</span>
+            <div class="fw-bold">{{ rows|length }}</div>
+        </div>
+        <div>
+            <span class="text-muted small">Importe total</span>
+            <div class="fw-bold text-success">${{ "{:,.0f}".format(total) }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Nro. Línea</th>
+                        <th>Plan</th>
+                        <th>Descripción</th>
+                        <th class="text-end">Importe</th>
+                        <th>Estado</th>
+                        <th>Prestadora</th>
+                        <th>Responsable</th>
+                        <th>Localidad</th>
+                        <th>Sector</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for r in rows %}
+                <tr>
+                    <td><strong>{{ r.nrolinea }}</strong></td>
+                    <td class="small">{{ r.Plan or '-' }}</td>
+                    <td class="small text-muted">{{ r.PlanDescripcion or '' }}</td>
+                    <td class="text-end">
+                        {% if r.Importe %}
+                            <strong>${{ "{:,.0f}".format(r.Importe) }}</strong>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td>
+                        {% if r.Status == 'ACTIVE' or r.Status == 'Active' %}
+                            <span class="badge badge-activo">{{ r.Status }}</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ r.Status or '-' }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="small">{{ r.prestadora or '?' }}</td>
+                    <td class="small">
+                        {% if r.idchip and r.responsable %}
+                            <a href="{{ url_for('responsables.ver', id=r.idchip) }}" class="text-decoration-none">
+                                {{ r.responsable }}
+                            </a>
+                        {% elif r.responsable %}
+                            {{ r.responsable }}
+                        {% else %}
+                            <span class="text-muted">Sin asignar</span>
+                        {% endif %}
+                    </td>
+                    <td class="small text-muted">{{ r.localidad or '-' }}</td>
+                    <td class="small text-muted">{{ r.sector or '-' }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="fas fa-info-circle me-1"></i>
+    No hay datos de facturación cargados.
+    <a href="{{ url_for('reportes.importar') }}">Importar un archivo xlsx</a> para comenzar.
+</div>
+{% endif %}
+{% endblock %}
