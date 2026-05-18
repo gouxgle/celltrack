@@ -37,11 +37,11 @@ echo "   ✓ VM actualizada."
 
 echo ""
 echo "▶ 3/3  Reinicio del contenedor..."
-if echo "$CHANGED" | grep -q "\.py$"; then
+if echo "$CHANGED" | grep -qE "\.(py|html|css|js|svg)$"; then
     ssh -o StrictHostKeyChecking=no "$VM_HOST" "docker restart $CONTAINER"
-    echo "   ✓ Contenedor reiniciado (cambios en .py detectados)."
+    echo "   ✓ Contenedor reiniciado."
 else
-    echo "   ⚡ Sin cambios en .py — no hace falta reiniciar."
+    echo "   ⚡ Sin cambios relevantes — no reinicia."
 fi
 
 echo ""
