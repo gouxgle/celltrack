@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CellTrack</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <form method="POST" class="pedido-form">
+            <button type="submit" formaction="{{ url_for('login.login') }}" name="accion" value="cerrar" class="cerrar-sesion">Cerrar Sesion</button>
+            <img src="{{ url_for('static', filename='Logo_REFSA.jpg') }}" alt="Logo REFSA" class="logo-pm">
+            <h1 class="title">SISTEMA DE ALMACENES REFSA</h1>
+            <h2 class="tarea">PEDIDO INTERNO DE MATERIALES (PIM)</h2>
+            <h3 class="title"> Usuario: {{ usuario }}</h3>
+
+ 
+            <div class="form-row button-row">
+                <button type="submit" name="accion" value="limpiar" class="btn-secondary">Limpiar Lista</button>
+                <button type="submit" name="accion" value="subir" class="btn-primary" id="btnSubir">Subir Pedido</button>
+            </div>
+        </form>
+
+
+</body>
+<script>
+    document.getElementById('btnSubir').addEventListener('click', function (event) {
+        const confirmado = confirm('¿Está seguro de subir el pedido?');
+        if (!confirmado) {
+            event.preventDefault(); // cancela el envío del formulario
+        }
+    });
+</script>
+
+</html>

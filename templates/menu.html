@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CellTrack</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <img src="{{ url_for('static', filename='Logo_REFSA.jpg') }}" alt="Logo REFSA" class="logo-pm">
+        <h1 class="title">SISTEMA DE ALMACENES REFSA</h1>
+        <h2 class="tarea">Bienvenido {{ usuario }}</h2>
+
+        <div class="card-menu">
+            <h3>Por favor, elija la tarea que quiere realizar:</h3>
+            <div class="form-row button-row">
+                <a href="{{ url_for('pedidos.pedido_interno') }}" class="btn-buscar">PEDIDO INTERNO </a>
+                <a href="{{ url_for('retiro.retiro_materiales') }}" class="btn-buscar">RETIRO DE MATERIALES</a>
+                <a href="{{ url_for('estado.estado_pedido') }}" class="btn-buscar">ESTADO DE PEDIDO</a>
+                <a href="{{ url_for('imprimir.imprimir') }}" class="btn-buscar">IMPRIMIR VALES</a>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('login.login') }}">
+            <button type="submit" name="accion" value="cerrar" class="cerrar-sesion">Cerrar Sesión</button>
+        </form>
+    </div>
+</body>
+</html>

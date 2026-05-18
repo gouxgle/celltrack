@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CellTrack - Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Modificado solo el ancho de los botones */
+        .modal-sector-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px; /* Espacio entre botones */
+            padding: 20px 0;
+            align-items: center; /* Añadido para centrar los botones */
+        }
+        
+        .modal-sector-buttons .btn-primary {
+            padding: 12px;
+            font-size: 16px;
+            width: 70%; /* Cambiado de 100% a 70% para hacerlos más angostos */
+            min-width: 180px; /* Ancho mínimo para que no queden muy pequeños */
+        }
+        
+        .modal-sector-buttons li {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            width: 100%; /* Asegura que el li ocupe todo el ancho */
+            display: flex;
+            justify-content: center; /* Centra el botón dentro del li */
+        }
+    </style>
+</head>
+<body class="login-body">
+    <!-- Todo el resto del código se mantiene EXACTAMENTE igual -->
+    <div class="login-container">
+        <img src="{{ url_for('static', filename='Logo_REFSA.jpg') }}" alt="Logo REFSA" class="logo">
+        <h1 class="login-title">SISTEMA DE ALMACENES REFSA</h1>
+
+        <form method="POST" action="{{ url_for('login.login') }}" class="login-form">
+            <div class="form-group">
+                <label for="usuario">Usuario</label>
+                <input type="text" id="usuario" name="usuario" required>
+            </div>
+
+            <div class="form-group">
+                <label for="clave">Clave</label>
+                <input type="password" id="clave" name="clave" required>
+            </div>
+
+            <button type="submit" class="btn-primary">Ingresar</button>
+        </form>
+
+        {% if seleccionar_sector %}
+        <div id="modalSector" class="modal" style="display:block;">
+            <div class="modal-content">
+                <h2>Seleccionar Sector</h2>
+                <ul class="modal-sector-buttons">
+                {% for sector in sectores %}
+                    <li>
+                        <button class="btn-primary" onclick="seleccionarSector('{{ sector.id }}')">
+                            {{ sector.nombre }}
+                        </button>
+                    </li>
+                {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <script>
+            function seleccionarSector(id) {
+                fetch("/seleccionar_sector", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({ sector: id })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        window.location.href = "{{ url_for('menu_bp.menu_principal') }}";
+                    }
+                });
+            }
+        </script>
+        {% endif %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="messages">
+              {% for category, message in messages %}
+                <div class="alert {{ category }}">{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <footer class="login-footer">
+            v{{ app_version }} - REFSA Energía
+        </footer>
+    </div>
+
+    <script>
+        function elegirSector(sectorId) {
+            fetch("{{ url_for('login.seleccionar_sector') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sector: sectorId })
+            }).then(res => res.json()).then(data => {
+                if (data.status === 'ok') {
+                    window.location.href = "{{ url_for('pedidos.pedido_interno') }}";
+                }
+            });
+        }
+    </script>
+</body>
+</html>

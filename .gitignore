@@ -34,7 +34,6 @@ app.py
 formprin.html
 static/style-bkp.css
 static/Logo_REFSA_bkp.jpg
-/templates/
 
 # OS
 .DS_Store
