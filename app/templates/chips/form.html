@@ -12,9 +12,11 @@
     </h4>
 </div>
 
-<div class="card" style="max-width: 640px;">
+<div class="row g-3">
+<div class="{{ 'col-lg-6' if not chip else 'col-12' }}" style="{{ '' if not chip else 'max-width:640px' }}">
+<div class="card">
     <div class="card-body p-4">
-        <form method="POST">
+        <form method="POST" id="formChip">
 
             <div class="mb-3">
                 <label class="form-label fw-bold">Nro. de Línea <span class="text-danger">*</span></label>
@@ -145,11 +147,80 @@
         </form>
     </div>
 </div>
+</div>
+
+{# ── Sección reposición: solo al crear un nuevo chip ────────────────────── #}
+{% if not chip %}
+<div class="col-lg-6">
+    <div class="card border-warning">
+        <div class="card-header bg-warning bg-opacity-10">
+            <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" id="cbReposicion">
+                <label class="form-check-label fw-bold text-warning" for="cbReposicion">
+                    <i class="fas fa-exchange-alt me-1"></i> Este chip reemplaza a uno existente
+                </label>
+            </div>
+        </div>
+        <div class="card-body" id="seccionReposicion" style="display:none;">
+
+            <div class="alert alert-warning py-2 small mb-3">
+                <i class="fas fa-info-circle me-1"></i>
+                El chip seleccionado quedará <strong>dado de baja</strong> y su asignación activa
+                se transferirá automáticamente a este nuevo chip.
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Chip a reemplazar <span class="text-danger">*</span></label>
+                <select name="idchip_reemplazado" id="selChipAnterior" class="form-select select2-chips"
+                        disabled>
+                    <option value="">Cargando líneas activas...</option>
+                </select>
+                <div id="infoChipAnterior" class="form-text mt-1"></div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Motivo de reposición</label>
+                    <select name="idmotivo_reposicion" class="form-select" disabled id="selMotivoRepos">
+                        <option value="">Sin especificar</option>
+                        {% for m in motivos %}
+                        <option value="{{ m.idmotivo }}">{{ m.motivo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Fecha de reposición</label>
+                    <input type="date" name="fecha_reposicion" id="fechaReposicion"
+                           class="form-control" disabled>
+                </div>
+            </div>
+
+        </div>
+        <div class="card-body pt-0" id="seccionReposicionOff">
+            <p class="text-muted small mb-0">
+                <i class="fas fa-info-circle me-1"></i>
+                Activá si este chip reemplaza a otro que fue extraviado, dejó de funcionar o fue reasignado.
+                El chip anterior quedará dado de baja y la asignación pasará automáticamente.
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+</div>{# fin row #}
 {% endblock %}
 
 {% block extra_js %}
 <script>
-const ID_SERVICIO_DATOS = {{ servicios | selectattr('servicio', 'equalto', 'DATOS') | map(attribute='idservicio') | first | default(0) }};
+const ID_SERVICIO_DATOS = {{ servicios | selectattr('servicio', 'upper', 'DATOS') | list | length > 0
+    and (servicios | selectattr('servicio', 'equalto', 'DATOS') | map(attribute='idservicio') | first | default(0))
+    or 0 }};
+
+// Calcular id de DATOS correctamente
+(function() {
+    {% for s in servicios %}
+    if ("{{ s.servicio }}".trim().toUpperCase() === "DATOS") window._ID_DATOS = {{ s.idservicio }};
+    {% endfor %}
+})();
 
 function toggleBaja(show) {
     document.getElementById('campoBaja').style.display = show ? '' : 'none';
@@ -163,12 +234,58 @@ function toggleDescripcion() {
     const sel = document.querySelector('select[name=idservicio]');
     const val = parseInt(sel.value);
     document.getElementById('campoDescripcion').style.display =
-        (val === ID_SERVICIO_DATOS) ? '' : 'none';
+        (val === window._ID_DATOS) ? '' : 'none';
 }
 
-document.querySelector('select[name=idservicio]').addEventListener('change', toggleDescripcion);
+const selServ = document.querySelector('select[name=idservicio]');
+if (selServ) {
+    selServ.addEventListener('change', toggleDescripcion);
+    toggleDescripcion();
+}
 
-// Al cargar, si ya es DATOS mostrar el campo
-toggleDescripcion();
+// ── Reposición (solo en nuevo chip) ────────────────────────────────────────
+const cbRepos = document.getElementById('cbReposicion');
+if (cbRepos) {
+    let chipsActivos = [];
+
+    // Carga chips activos al montar
+    fetch('/chips/api/activos')
+        .then(r => r.json())
+        .then(data => {
+            chipsActivos = data;
+            const sel = document.getElementById('selChipAnterior');
+            sel.innerHTML = '<option value="">Seleccionar línea...</option>';
+            data.forEach(c => {
+                const resp = c.responsable ? ` — ${c.responsable}` : ' — sin asignar';
+                const plan = c.plan ? ` (${c.plan})` : '';
+                sel.innerHTML += `<option value="${c.idchip}">${c.prestadora} ${c.nrolinea}${plan}${resp}</option>`;
+            });
+        });
+
+    cbRepos.addEventListener('change', function() {
+        const on = this.checked;
+        document.getElementById('seccionReposicion').style.display = on ? '' : 'none';
+        document.getElementById('seccionReposicionOff').style.display = on ? 'none' : '';
+        document.getElementById('selChipAnterior').disabled = !on;
+        document.getElementById('selMotivoRepos').disabled = !on;
+        document.getElementById('fechaReposicion').disabled = !on;
+        if (on && !document.getElementById('fechaReposicion').value) {
+            document.getElementById('fechaReposicion').value = new Date().toISOString().split('T')[0];
+        }
+    });
+
+    document.getElementById('selChipAnterior').addEventListener('change', function() {
+        const id = parseInt(this.value);
+        const chip = chipsActivos.find(c => c.idchip === id);
+        const info = document.getElementById('infoChipAnterior');
+        if (chip) {
+            info.innerHTML = chip.responsable
+                ? `<span class="text-warning"><i class="fas fa-user me-1"></i>Asignado a: <strong>${chip.responsable}</strong> — la asignación pasará al nuevo chip</span>`
+                : `<span class="text-muted"><i class="fas fa-info-circle me-1"></i>Sin asignación activa — solo se dará de baja</span>`;
+        } else {
+            info.innerHTML = '';
+        }
+    });
+}
 </script>
 {% endblock %}

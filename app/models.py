@@ -137,21 +137,23 @@ class Celular(db.Model):
 
 class Chip(db.Model):
     __tablename__ = 'chip'
-    idchip       = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    idprestadora = db.Column(db.Integer, db.ForeignKey('prestadora.idprestadora'), nullable=False)
-    nrolinea     = db.Column(db.String(15), nullable=False)
-    idservicio   = db.Column(db.Integer, db.ForeignKey('servicio.idservicio'), nullable=False)
-    baja         = db.Column(FlexDate)
-    idmotivo     = db.Column(db.Integer, db.ForeignKey('motivo.idmotivo'))
-    nrochip      = db.Column(db.String(20))
-    plan         = db.Column(db.String(10))
-    descripcion  = db.Column(db.String(100))
+    idchip             = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    idprestadora       = db.Column(db.Integer, db.ForeignKey('prestadora.idprestadora'), nullable=False)
+    nrolinea           = db.Column(db.String(15), nullable=False)
+    idservicio         = db.Column(db.Integer, db.ForeignKey('servicio.idservicio'), nullable=False)
+    baja               = db.Column(FlexDate)
+    idmotivo           = db.Column(db.Integer, db.ForeignKey('motivo.idmotivo'))
+    nrochip            = db.Column(db.String(20))
+    plan               = db.Column(db.String(10))
+    descripcion        = db.Column(db.String(100))
+    idchip_reemplazado = db.Column(db.Integer, db.ForeignKey('chip.idchip'), nullable=True)
 
-    prestadora = db.relationship('Prestadora', foreign_keys=[idprestadora])
-    servicio   = db.relationship('Servicio', foreign_keys=[idservicio])
-    motivo     = db.relationship('Motivo', foreign_keys=[idmotivo])
-    asignaciones = db.relationship('RespxChip', backref='chip_rel', lazy='dynamic',
-                                   foreign_keys='RespxChip.idchip')
+    prestadora       = db.relationship('Prestadora', foreign_keys=[idprestadora])
+    servicio         = db.relationship('Servicio', foreign_keys=[idservicio])
+    motivo           = db.relationship('Motivo', foreign_keys=[idmotivo])
+    chip_reemplazado = db.relationship('Chip', foreign_keys=[idchip_reemplazado], remote_side='Chip.idchip')
+    asignaciones     = db.relationship('RespxChip', backref='chip_rel', lazy='dynamic',
+                                       foreign_keys='RespxChip.idchip')
 
     @property
     def activo(self):

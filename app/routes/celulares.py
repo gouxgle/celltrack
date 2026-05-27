@@ -102,6 +102,27 @@ def nuevo():
                 resp = Responsable.query.get(idresponsable)
                 audit('ASIGNAR', 'celular', cel.idcelular,
                       f'→ {resp.responsable.strip() if resp else idresponsable} | chip={idchip} | desde={desde} | condicion={condicion}')
+
+                # Reposición de chip: dar de baja chip anterior si se indicó
+                idchip_baja_rep   = request.form.get('idchip_baja_rep', type=int) or None
+                idmotivo_chip_rep = request.form.get('idmotivo_chip_rep', type=int) or None
+                fecha_baja_chip_str = request.form.get('fecha_baja_chip_rep', '').strip()
+                fecha_baja_chip   = date.fromisoformat(fecha_baja_chip_str) if fecha_baja_chip_str else date.today()
+                if idchip_baja_rep:
+                    chip_ant = Chip.query.get(idchip_baja_rep)
+                    if chip_ant and not chip_ant.baja:
+                        chip_ant.baja     = fecha_baja_chip
+                        chip_ant.idmotivo = idmotivo_chip_rep
+                        asign_chip_ant = RespxChip.query.filter(
+                            RespxChip.idchip == idchip_baja_rep,
+                            db.or_(RespxChip.hasta.is_(None), RespxChip.hasta == '', RespxChip.hasta == '0000-00-00')
+                        ).first()
+                        if asign_chip_ant:
+                            asign_chip_ant.hasta    = fecha_baja_chip
+                            asign_chip_ant.idmotivo = idmotivo_chip_rep
+                        audit('BAJA', 'chip', idchip_baja_rep,
+                              f'Baja por reposición al asignar celular IMEI={imei} | motivo={idmotivo_chip_rep} | fecha={fecha_baja_chip}')
+
                 db.session.commit()
                 return redirect(url_for('celulares.acta_pdf', asign_id=asign.id))
 

@@ -142,6 +142,43 @@
                               placeholder="Notas adicionales..."></textarea>
                 </div>
 
+                <!-- Reposición de chip -->
+                <hr class="my-3">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="cbReposicionChip">
+                    <label class="form-check-label fw-bold text-warning" for="cbReposicionChip">
+                        <i class="fas fa-sim-card me-1"></i> También dar de baja un chip existente
+                    </label>
+                </div>
+                <div id="seccionReposicionChip" style="display:none;">
+                    <div class="alert alert-warning py-2 small mb-3">
+                        <i class="fas fa-info-circle me-1"></i>
+                        El chip seleccionado quedará <strong>dado de baja</strong> con el motivo y fecha indicados.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Chip a dar de baja <span class="text-danger">*</span></label>
+                        <select name="idchip_baja_rep" id="idchipBajaRep" class="form-select" disabled>
+                            <option value="">— Seleccionar responsable primero —</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Motivo de baja</label>
+                            <select name="idmotivo_chip_rep" class="form-select" id="motivoChipRep" disabled>
+                                <option value="">Sin especificar</option>
+                                {% for m in motivos %}
+                                <option value="{{ m.idmotivo }}">{{ m.motivo }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Fecha de baja</label>
+                            <input type="date" name="fecha_baja_chip_rep" id="fechaBajaChipRep"
+                                   class="form-control" disabled>
+                        </div>
+                    </div>
+                </div>
+
             </div>
             <div class="card-body pt-0" id="seccionAsignarOff">
                 <p class="text-muted small mb-0">
@@ -224,6 +261,41 @@ $('#idchip').on('change', function() {
             $('#alertaReemplazo').removeClass('d-none');
         }
     });
+});
+
+// ── Toggle reposición chip ─────────────────────────────────────────────────
+$('#cbReposicionChip').on('change', function() {
+    const on = this.checked;
+    $('#seccionReposicionChip').toggle(on);
+    $('#idchipBajaRep, #motivoChipRep, #fechaBajaChipRep').prop('disabled', !on);
+    if (on && !$('#fechaBajaChipRep').val()) {
+        $('#fechaBajaChipRep').val(new Date().toISOString().split('T')[0]);
+    }
+    // Reload chips for the currently selected responsable
+    if (on) {
+        const idResp = $('#idresponsable').val();
+        if (idResp) cargarChipsBajaRep(idResp);
+    }
+});
+
+function cargarChipsBajaRep(idResp) {
+    const selChipAsig = $('#idchip').val();
+    $.getJSON(`/chips/api/activos`, function(data) {
+        let opts = '<option value="">Seleccionar chip...</option>';
+        data.forEach(c => {
+            const plan = c.plan ? ` (${c.plan})` : '';
+            const resp = c.responsable ? ` — ${c.responsable}` : '';
+            opts += `<option value="${c.idchip}">${c.prestadora} ${c.nrolinea}${plan}${resp}</option>`;
+        });
+        $('#idchipBajaRep').html(opts);
+    });
+}
+
+// Reload chip baja list when responsable changes
+$('#idresponsable').on('change', function() {
+    if ($('#cbReposicionChip').is(':checked')) {
+        cargarChipsBajaRep($(this).val());
+    }
 });
 
 // ── Select2 ───────────────────────────────────────────────────────────────

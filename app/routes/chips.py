@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import login_required
 from app.models import db, Chip, Prestadora, Servicio, Motivo, RespxChip, Responsable
 from app.utils.auditoria import log as audit
@@ -78,6 +78,32 @@ def lista():
         tab=tab, total_datos=total_datos, total_telefonia=total_telefonia)
 
 
+@bp.route('/api/activos')
+@login_required
+def api_chips_activos():
+    """Chips activos (sin baja) para el selector de reposición."""
+    _sin_baja = db.or_(Chip.baja.is_(None), Chip.baja == '', Chip.baja == '0000-00-00')
+    rows = (
+        db.session.query(Chip, Prestadora)
+        .join(Prestadora, Chip.idprestadora == Prestadora.idprestadora)
+        .filter(_sin_baja)
+        .order_by(Prestadora.prestadora, Chip.nrolinea)
+        .all()
+    )
+    resultado = []
+    for chip, prest in rows:
+        asign = _asign_activa_chip(chip.idchip)
+        resp  = Responsable.query.get(asign.idresponsable) if asign else None
+        resultado.append({
+            'idchip':      chip.idchip,
+            'nrolinea':    chip.nrolinea,
+            'plan':        (chip.plan or '').strip(),
+            'prestadora':  prest.prestadora.strip(),
+            'responsable': resp.responsable.strip() if resp else None,
+        })
+    return jsonify(resultado)
+
+
 @bp.route('/nuevo', methods=['GET', 'POST'])
 @login_required
 def nuevo():
@@ -91,24 +117,54 @@ def nuevo():
         if not nrolinea or not idprestadora or not idservicio:
             flash('Nro. de línea, prestadora y servicio son obligatorios.', 'danger')
         else:
-            descripcion = request.form.get('descripcion', '').strip() or None
+            descripcion        = request.form.get('descripcion', '').strip() or None
             if not _es_datos(idservicio):
                 descripcion = None
+            idchip_ant         = request.form.get('idchip_reemplazado', type=int) or None
+            idmotivo_repos     = request.form.get('idmotivo_reposicion', type=int) or None
+            fecha_repos_str    = request.form.get('fecha_reposicion', '').strip()
+            fecha_repos        = date.fromisoformat(fecha_repos_str) if fecha_repos_str else date.today()
+
             chip = Chip(nrolinea=nrolinea, idprestadora=idprestadora,
                         idservicio=idservicio, nrochip=nrochip, plan=plan,
-                        descripcion=descripcion)
+                        descripcion=descripcion, idchip_reemplazado=idchip_ant)
             db.session.add(chip)
             db.session.flush()
-            audit('CREAR', 'chip', chip.idchip,
-                  f'Nueva línea {nrolinea} | prestadora={idprestadora} servicio={idservicio} plan={plan}')
+
+            detalle_audit = f'Nueva línea {nrolinea} | prestadora={idprestadora} | plan={plan}'
+
+            if idchip_ant:
+                chip_ant = Chip.query.get(idchip_ant)
+                if chip_ant and not chip_ant.baja:
+                    chip_ant.baja     = fecha_repos
+                    chip_ant.idmotivo = idmotivo_repos
+                    asign_ant = _asign_activa_chip(idchip_ant)
+                    if asign_ant:
+                        asign_ant.hasta    = fecha_repos
+                        asign_ant.idmotivo = idmotivo_repos
+                        nueva_asign = RespxChip(
+                            idresponsable=asign_ant.idresponsable,
+                            idchip=chip.idchip,
+                            desde=fecha_repos,
+                            condicion='BUENO',
+                            observaciones=f'Reposición de línea {chip_ant.nrolinea}',
+                        )
+                        db.session.add(nueva_asign)
+                        resp = Responsable.query.get(asign_ant.idresponsable)
+                        detalle_audit += f' | reemplaza #{idchip_ant} ({chip_ant.nrolinea}) → {resp.responsable.strip() if resp else "?"}'
+                    audit('BAJA', 'chip', idchip_ant,
+                          f'Reemplazado por chip #{chip.idchip} ({nrolinea}) | motivo={idmotivo_repos} | fecha={fecha_repos}')
+
+            audit('CREAR', 'chip', chip.idchip, detalle_audit)
             db.session.commit()
             flash(f'Chip {nrolinea} agregado.', 'success')
             return redirect(url_for('chips.ver', id=chip.idchip))
 
     prestadoras = Prestadora.query.order_by(Prestadora.prestadora).all()
     servicios   = Servicio.query.order_by(Servicio.servicio).all()
+    motivos     = Motivo.query.order_by(Motivo.motivo).all()
     return render_template('chips/form.html', chip=None,
-                           prestadoras=prestadoras, servicios=servicios)
+                           prestadoras=prestadoras, servicios=servicios, motivos=motivos)
 
 
 @bp.route('/<int:id>')

@@ -16,6 +16,18 @@ def create_app():
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'connect_args': {'ssl_disabled': True}}
 
     db.init_app(app)
+
+    # Migración automática: columna idchip_reemplazado en chip
+    with app.app_context():
+        from sqlalchemy import text
+        try:
+            db.session.execute(text(
+                "ALTER TABLE chip ADD COLUMN idchip_reemplazado INT NULL"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Iniciá sesión para continuar.'
