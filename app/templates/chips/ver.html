@@ -9,7 +9,12 @@
     <h4 class="mb-0" style="color: var(--ct-blue);">
         <i class="fas fa-sim-card"></i> Chip #{{ chip.idchip }} — {{ chip.nrolinea }}
     </h4>
-    <a href="{{ url_for('chips.editar', id=chip.idchip) }}" class="btn btn-outline-primary btn-sm ms-auto">
+    {% if not chip.baja %}
+    <button class="btn btn-outline-warning btn-sm ms-auto me-1" data-bs-toggle="modal" data-bs-target="#modalCambiarSIM">
+        <i class="fas fa-sim-card"></i> Cambiar SIM
+    </button>
+    {% endif %}
+    <a href="{{ url_for('chips.editar', id=chip.idchip) }}" class="btn btn-outline-primary btn-sm {% if chip.baja %}ms-auto{% endif %}">
         <i class="fas fa-edit"></i> Editar
     </a>
 </div>
@@ -224,6 +229,59 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-warning">Confirmar devolución</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal: Cambiar SIM -->
+{% if not chip.baja %}
+<div class="modal fade" id="modalCambiarSIM" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" action="{{ url_for('chips.cambiar_sim', id=chip.idchip) }}">
+            <div class="modal-content">
+                <div class="modal-header bg-warning bg-opacity-25">
+                    <h5 class="modal-title"><i class="fas fa-sim-card me-1"></i> Cambiar SIM — línea {{ chip.nrolinea }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info py-2 small mb-3">
+                        <i class="fas fa-info-circle me-1"></i>
+                        El número de línea <strong>{{ chip.nrolinea }}</strong> no cambia.
+                        Solo se actualiza el SIM físico (nrochip).
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">SIM actual</label>
+                        <input type="text" class="form-control" value="{{ chip.nrochip.strip() if chip.nrochip else '—' }}" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nuevo Nro. SIM <span class="text-danger">*</span></label>
+                        <input type="text" name="nrochip_nuevo" class="form-control"
+                               maxlength="20" placeholder="Nro. del nuevo chip SIM" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Motivo del cambio</label>
+                            <select name="idmotivo" class="form-select">
+                                <option value="">Sin especificar</option>
+                                {% for m in motivos %}
+                                <option value="{{ m.idmotivo }}">{{ m.motivo }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Fecha del cambio</label>
+                            <input type="date" name="fecha_cambio" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save"></i> Registrar cambio
+                    </button>
                 </div>
             </div>
         </form>

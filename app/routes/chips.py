@@ -262,6 +262,28 @@ def editar(id):
                            prestadoras=prestadoras, servicios=servicios, motivos=motivos)
 
 
+@bp.route('/<int:id>/cambiar-sim', methods=['POST'])
+@login_required
+def cambiar_sim(id):
+    chip = Chip.query.get_or_404(id)
+    if chip.baja:
+        flash('El chip está dado de baja.', 'warning')
+        return redirect(url_for('chips.ver', id=id))
+
+    nrochip_nuevo  = request.form.get('nrochip_nuevo', '').strip() or None
+    idmotivo       = request.form.get('idmotivo', type=int) or None
+    fecha_str      = request.form.get('fecha_cambio', '').strip()
+    fecha          = date.fromisoformat(fecha_str) if fecha_str else date.today()
+
+    nrochip_viejo  = chip.nrochip
+    chip.nrochip   = nrochip_nuevo
+    audit('EDITAR', 'chip', id,
+          f'Cambio SIM: {(nrochip_viejo or "").strip() or "sin SIM"} → {nrochip_nuevo or "sin SIM"} | motivo={idmotivo} | fecha={fecha}')
+    db.session.commit()
+    flash('SIM actualizado correctamente.', 'success')
+    return redirect(url_for('chips.ver', id=id))
+
+
 @bp.route('/<int:id>/dar-baja', methods=['POST'])
 @login_required
 def dar_baja(id):
