@@ -154,6 +154,31 @@
 </div>
 {% endif %}{# fin bloque historial/modales no-datos #}
 
+<!-- Historial de cambios de SIM -->
+{% if historial_sim %}
+<div class="card mt-3">
+    <div class="card-header"><i class="fas fa-sim-card me-1"></i> Historial de cambios de SIM</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr><th>Fecha</th><th>Usuario</th><th>Detalle</th></tr>
+                </thead>
+                <tbody>
+                {% for h in historial_sim %}
+                <tr>
+                    <td class="text-nowrap">{{ h.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td class="small">{{ h.usuario }}</td>
+                    <td class="small text-muted">{{ h.detalle }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Modal: Asignar -->
 <div class="modal fade" id="modalAsignar" tabindex="-1">
     <div class="modal-dialog">

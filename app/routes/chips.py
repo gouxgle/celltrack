@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import login_required
-from app.models import db, Chip, Prestadora, Servicio, Motivo, RespxChip, Responsable
+from app.models import db, Chip, Prestadora, Servicio, Motivo, RespxChip, Responsable, Auditoria
 from app.utils.auditoria import log as audit
 from datetime import date
 
@@ -180,8 +180,15 @@ def ver(id):
     )
     responsables_disponibles = Responsable.query.order_by(Responsable.responsable).all()
     motivos = Motivo.query.order_by(Motivo.motivo).all()
+    historial_sim = (
+        Auditoria.query
+        .filter(Auditoria.entidad == 'chip', Auditoria.id_entidad == id,
+                Auditoria.detalle.like('%Cambio SIM%'))
+        .order_by(Auditoria.fecha.desc())
+        .all()
+    )
     return render_template('chips/ver.html',
-        chip=chip, historial=historial,
+        chip=chip, historial=historial, historial_sim=historial_sim,
         motivos=motivos, responsables_disponibles=responsables_disponibles)
 
 
