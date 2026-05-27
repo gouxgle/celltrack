@@ -211,9 +211,7 @@
 
 {% block extra_js %}
 <script>
-const ID_SERVICIO_DATOS = {{ servicios | selectattr('servicio', 'upper', 'DATOS') | list | length > 0
-    and (servicios | selectattr('servicio', 'equalto', 'DATOS') | map(attribute='idservicio') | first | default(0))
-    or 0 }};
+const ID_SERVICIO_DATOS = 0; // calculado abajo por window._ID_DATOS
 
 // Calcular id de DATOS correctamente
 (function() {
