@@ -46,9 +46,15 @@ def index():
 @bp.route('/por-localidad')
 @login_required
 def por_localidad():
-    rows = db.session.execute(text("""
+    from collections import OrderedDict
+    from app.models import Localidad as LocalidadModel
+
+    loc_f = request.args.get('localidad', type=int)
+
+    sql = """
         SELECT
             COALESCE(l.localidad, '— Sin localidad —') AS localidad,
+            l.idlocalidad,
             COALESCE(d.distrito, '')                    AS distrito,
             ch.idchip,
             ch.nrolinea,
@@ -59,18 +65,19 @@ def por_localidad():
             COALESCE(resp.responsable, '')              AS responsable,
             COALESCE(sec.sector, '')                    AS sector
         FROM chip ch
-        LEFT JOIN prestadora p   ON p.idprestadora  = ch.idprestadora
-        LEFT JOIN servicio s     ON s.idservicio     = ch.idservicio
-        LEFT JOIN respxchip rx   ON rx.idchip        = ch.idchip AND rx.hasta IS NULL
+        LEFT JOIN prestadora p     ON p.idprestadora   = ch.idprestadora
+        LEFT JOIN servicio s       ON s.idservicio      = ch.idservicio
+        LEFT JOIN respxchip rx     ON rx.idchip         = ch.idchip AND rx.hasta IS NULL
         LEFT JOIN responsable resp ON resp.idresponsable = rx.idresponsable
-        LEFT JOIN localidad l    ON l.idlocalidad    = resp.idlocalidad
-        LEFT JOIN sector sec     ON sec.idsector     = resp.idsector
-        LEFT JOIN distrito d     ON d.iddistrito     = l.iddistrito
+        LEFT JOIN localidad l      ON l.idlocalidad     = resp.idlocalidad
+        LEFT JOIN sector sec       ON sec.idsector      = resp.idsector
+        LEFT JOIN distrito d       ON d.iddistrito      = l.iddistrito
+        {where}
         ORDER BY localidad, resp.responsable, ch.nrolinea
-    """)).fetchall()
+    """
+    where = f"WHERE l.idlocalidad = {int(loc_f)}" if loc_f else ""
+    rows = db.session.execute(text(sql.format(where=where))).fetchall()
 
-    # Agrupar por localidad
-    from collections import OrderedDict
     grupos = OrderedDict()
     for r in rows:
         key = r.localidad
@@ -80,9 +87,11 @@ def por_localidad():
 
     total_lineas  = len(rows)
     total_activas = sum(1 for r in rows if not r.baja or str(r.baja) in ('', '0000-00-00'))
+    localidades   = LocalidadModel.query.order_by(LocalidadModel.localidad).all()
 
     return render_template('reportes/por_localidad.html',
-        grupos=grupos, total_lineas=total_lineas, total_activas=total_activas)
+        grupos=grupos, total_lineas=total_lineas, total_activas=total_activas,
+        localidades=localidades, loc_f=loc_f)
 
 
 def _estilo_encabezado(ws, fila, columnas):

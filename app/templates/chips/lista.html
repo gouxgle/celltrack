@@ -129,7 +129,7 @@
                 <tbody>
                 {% for row in chips %}
                 {% set chip = row.chip %}
-                <tr>
+                <tr data-href="{{ url_for('chips.ver', id=chip.idchip) }}">
                     <td style="color:#cbd5e1;font-size:.78rem;">{{ chip.idchip }}</td>
                     <td style="font-weight:700;font-size:.88rem;color:#0d1b2e;">{{ chip.nrolinea }}</td>
                     <td>

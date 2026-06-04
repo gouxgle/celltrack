@@ -62,7 +62,7 @@
                 </thead>
                 <tbody>
                 {% for row in responsables %}
-                <tr>
+                <tr data-href="{{ url_for('responsables.ver', id=row.resp.idresponsable) }}">
                     <td><strong>{{ row.resp.responsable.strip() }}</strong></td>
                     <td class="small">{{ row.loc.localidad.strip() }}</td>
                     <td class="small text-muted">{{ row.sec.sector.strip() }}</td>

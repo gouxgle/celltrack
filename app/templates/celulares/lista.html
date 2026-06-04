@@ -80,7 +80,7 @@
                 <tbody>
                 {% for row in celulares %}
                 {% set cel = row.cel %}
-                <tr>
+                <tr data-href="{{ url_for('celulares.ver', id=cel.idcelular) }}">
                     <td style="color:#cbd5e1;font-size:.78rem;">{{ cel.idcelular }}</td>
                     <td>
                         <code style="background:#f1f5f9;padding:2px 7px;border-radius:5px;font-size:.78rem;color:#475569;">

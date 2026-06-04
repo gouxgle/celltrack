@@ -15,6 +15,7 @@ services:
       - MYSQL_PASSWORD=Celulares580
       - MYSQL_DATABASE=gcel
       - MYSQL_PORT=3306
+      - HTTPS_ONLY=false
     volumes:
       - ./app:/app/app
       - ./logs:/app/logs

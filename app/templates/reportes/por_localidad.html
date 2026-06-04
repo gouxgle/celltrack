@@ -19,6 +19,24 @@
     </div>
 </div>
 
+<!-- Filtro localidad -->
+<form method="get" class="d-flex align-items-center gap-2 mb-3">
+    <label class="text-muted small mb-0" style="white-space:nowrap;">Filtrar por localidad:</label>
+    <select name="localidad" class="form-select form-select-sm" style="max-width:220px;" onchange="this.form.submit()">
+        <option value="">— Todas —</option>
+        {% for loc in localidades %}
+        <option value="{{ loc.idlocalidad }}" {% if loc_f == loc.idlocalidad %}selected{% endif %}>
+            {{ loc.localidad.strip() }}
+        </option>
+        {% endfor %}
+    </select>
+    {% if loc_f %}
+    <a href="{{ url_for('reportes.por_localidad') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-times"></i> Limpiar
+    </a>
+    {% endif %}
+</form>
+
 <!-- Resumen -->
 <div class="card mb-3">
     <div class="card-body py-2 d-flex gap-4 flex-wrap">
