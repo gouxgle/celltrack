@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required
+from sqlalchemy import func
 from app.models import db, Responsable, Localidad, Sector, CelxResp, RespxChip, Celular, Chip, Marca, Modelo, Prestadora
 from app.utils.auditoria import log as audit
 
@@ -28,14 +29,34 @@ def lista():
     if loc_f:
         query = query.filter(Responsable.idlocalidad == loc_f)
 
-    responsables = query.order_by(Responsable.responsable).all()
+    # Subqueries de conteo — 1 query en vez de N*2
+    cel_sq = (
+        db.session.query(CelxResp.idresponsable, func.count(CelxResp.id).label('n'))
+        .filter(db.or_(CelxResp.hasta.is_(None), CelxResp.hasta == '', CelxResp.hasta == '0000-00-00'))
+        .group_by(CelxResp.idresponsable)
+        .subquery()
+    )
+    chip_sq = (
+        db.session.query(RespxChip.idresponsable, func.count(RespxChip.id).label('n'))
+        .filter(db.or_(RespxChip.hasta.is_(None), RespxChip.hasta == '', RespxChip.hasta == '0000-00-00'))
+        .group_by(RespxChip.idresponsable)
+        .subquery()
+    )
+    query = (
+        query
+        .add_columns(
+            func.coalesce(cel_sq.c.n, 0).label('n_cel'),
+            func.coalesce(chip_sq.c.n, 0).label('n_chip'),
+        )
+        .outerjoin(cel_sq, cel_sq.c.idresponsable == Responsable.idresponsable)
+        .outerjoin(chip_sq, chip_sq.c.idresponsable == Responsable.idresponsable)
+    )
 
-    resultado = []
-    for resp, loc, sec in responsables:
-        n_cel  = CelxResp.query.filter(CelxResp.idresponsable == resp.idresponsable, _sin_hasta(CelxResp.hasta)).count()
-        n_chip = RespxChip.query.filter(RespxChip.idresponsable == resp.idresponsable, _sin_hasta(RespxChip.hasta)).count()
-        resultado.append({'resp': resp, 'loc': loc, 'sec': sec,
-                          'n_cel': n_cel, 'n_chip': n_chip})
+    rows = query.order_by(Responsable.responsable).all()
+    resultado = [
+        {'resp': resp, 'loc': loc, 'sec': sec, 'n_cel': n_cel, 'n_chip': n_chip}
+        for resp, loc, sec, n_cel, n_chip in rows
+    ]
 
     sectores    = Sector.query.order_by(Sector.sector).all()
     localidades = Localidad.query.order_by(Localidad.localidad).all()
