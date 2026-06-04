@@ -38,7 +38,7 @@ def lista():
     total_telefonia = Chip.query.filter(Chip.idservicio != id_datos, _sin_baja).count()
 
     query = (
-        db.session.query(Chip, Prestadora, Servicio)
+        db.session.query(Chip, Prestadora, Servicio, RespxChip, Responsable)
         .join(Prestadora, Chip.idprestadora == Prestadora.idprestadora)
         .join(Servicio,   Chip.idservicio   == Servicio.idservicio)
     )
@@ -60,16 +60,24 @@ def lista():
             db.or_(Chip.nrolinea.like(f'%{q}%'), Chip.nrochip.like(f'%{q}%'))
         )
 
-    chips = query.order_by(Prestadora.prestadora, Chip.nrolinea).all()
+    _sin_hasta_cond = db.and_(
+        RespxChip.idchip == Chip.idchip,
+        db.or_(RespxChip.hasta.is_(None), RespxChip.hasta == '', RespxChip.hasta == '0000-00-00')
+    )
+    query = (
+        query
+        .outerjoin(RespxChip, _sin_hasta_cond)
+        .outerjoin(Responsable, RespxChip.idresponsable == Responsable.idresponsable)
+    )
+    if filtro == 'disponibles':
+        query = query.filter(RespxChip.id.is_(None))
 
-    resultado = []
-    for chip, prest, serv in chips:
-        asign = _asign_activa_chip(chip.idchip)
-        resp  = Responsable.query.get(asign.idresponsable) if asign else None
-        if filtro == 'disponibles' and resp:
-            continue
-        resultado.append({'chip': chip, 'prest': prest, 'serv': serv,
-                          'asign': asign, 'resp': resp})
+    rows = query.order_by(Prestadora.prestadora, Chip.nrolinea).all()
+
+    resultado = [
+        {'chip': chip, 'prest': prest, 'serv': serv, 'asign': asign, 'resp': resp}
+        for chip, prest, serv, asign, resp in rows
+    ]
 
     prestadoras = Prestadora.query.order_by(Prestadora.prestadora).all()
     return render_template('chips/lista.html',
