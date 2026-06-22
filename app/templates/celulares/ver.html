@@ -343,5 +343,9 @@ $('#modalAsignar').on('hidden.bs.modal', function () {
         $('#selectResponsableCel').select2('destroy');
     }
 });
+
+{% if request.args.get('open_acta') %}
+window.open("{{ url_for('celulares.acta_pdf', asign_id=request.args.get('open_acta')) }}", '_blank');
+{% endif %}
 </script>
 {% endblock %}
