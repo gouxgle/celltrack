@@ -13,7 +13,9 @@ def create_app():
     cfg = Config()
     app.config.from_object(cfg)
     app.config['SQLALCHEMY_DATABASE_URI'] = cfg.SQLALCHEMY_DATABASE_URI
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'connect_args': {'ssl_disabled': True}}
+    engine_opts = dict(getattr(cfg, 'SQLALCHEMY_ENGINE_OPTIONS', {}))
+    engine_opts['connect_args'] = {'ssl_disabled': True}
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = engine_opts
 
     db.init_app(app)
 
