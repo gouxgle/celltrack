@@ -21,30 +21,34 @@ def lista():
         q       = request.args.get('q', '').strip()
         marca_f = request.args.get('marca', type=int)
 
+        _sin_hasta_cond = db.and_(
+            CelxResp.idcelular == Celular.idcelular,
+            db.or_(CelxResp.hasta.is_(None), CelxResp.hasta == '', CelxResp.hasta == '0000-00-00')
+        )
+
         query = (
-            db.session.query(Celular, Marca, Modelo)
+            db.session.query(Celular, Marca, Modelo, CelxResp, Responsable)
             .join(Marca, Celular.idmarca == Marca.idmarca)
             .outerjoin(Modelo, db.and_(Celular.idmarca == Modelo.idmarca, Celular.idmodelo == Modelo.idmodelo))
+            .outerjoin(CelxResp, _sin_hasta_cond)
+            .outerjoin(Responsable, CelxResp.idresponsable == Responsable.idresponsable)
         )
         if filtro in ('activos', 'disponibles'):
             query = query.filter(_sin_baja(Celular.baja))
         elif filtro == 'baja':
             query = query.filter(db.not_(_sin_baja(Celular.baja)))
+        if filtro == 'disponibles':
+            query = query.filter(CelxResp.id.is_(None))
         if marca_f:
             query = query.filter(Celular.idmarca == marca_f)
         if q:
             query = query.filter(db.or_(Celular.imei.like(f'%{q}%'), Celular.serie.like(f'%{q}%')))
 
-        celulares_raw = query.order_by(Marca.marca, Modelo.modelo).all()
-        resultado = []
-        for cel, marca, modelo in celulares_raw:
-            asign = CelxResp.query.filter(
-                CelxResp.idcelular == cel.idcelular, _sin_hasta(CelxResp.hasta)
-            ).first()
-            resp = Responsable.query.get(asign.idresponsable) if asign else None
-            if filtro == 'disponibles' and resp:
-                continue
-            resultado.append({'cel': cel, 'marca': marca, 'modelo': modelo, 'asign': asign, 'resp': resp})
+        rows = query.order_by(Marca.marca, Modelo.modelo).all()
+        resultado = [
+            {'cel': cel, 'marca': marca, 'modelo': modelo, 'asign': asign, 'resp': resp}
+            for cel, marca, modelo, asign, resp in rows
+        ]
         marcas = Marca.query.order_by(Marca.marca).all()
         return render_template('celulares/lista.html',
             celulares=resultado, marcas=marcas, filtro=filtro, q=q, marca_f=marca_f)
