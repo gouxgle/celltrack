@@ -157,11 +157,26 @@ def ver(id):
         .order_by(CelxResp.desde.desc())
         .all()
     )
+    # Disponible = tiene más líneas activas que celulares activos (1 celular
+    # activo por línea, no por persona — alguien con 2 chips puede tener 2
+    # celulares simultáneos).
+    chips_activos_sq = (
+        db.session.query(db.func.count(RespxChip.id))
+        .filter(RespxChip.idresponsable == Responsable.idresponsable,
+                _sin_hasta(RespxChip.hasta))
+        .correlate(Responsable)
+        .scalar_subquery()
+    )
+    celulares_activos_sq = (
+        db.session.query(db.func.count(CelxResp.id))
+        .filter(CelxResp.idresponsable == Responsable.idresponsable,
+                _sin_hasta(CelxResp.hasta))
+        .correlate(Responsable)
+        .scalar_subquery()
+    )
     responsables_libres = (
         Responsable.query
-        .filter(~Responsable.idresponsable.in_(
-            db.session.query(CelxResp.idresponsable).filter(_sin_hasta(CelxResp.hasta))
-        ))
+        .filter(chips_activos_sq > celulares_activos_sq)
         .order_by(Responsable.responsable).all()
     )
     motivos = Motivo.query.order_by(Motivo.motivo).all()
