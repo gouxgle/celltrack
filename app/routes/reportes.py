@@ -94,6 +94,41 @@ def por_localidad():
         localidades=localidades, loc_f=loc_f)
 
 
+@bp.route('/por-responsable')
+@login_required
+def por_responsable():
+    resp_f = request.args.get('responsable', type=int)
+
+    responsables = Responsable.query.order_by(Responsable.responsable).all()
+
+    asignaciones = []
+    responsable_sel = None
+    if resp_f:
+        responsable_sel = Responsable.query.get(resp_f)
+        rows = db.session.execute(text("""
+            SELECT
+                cr.id, cr.desde, cr.hasta, cr.condicion, cr.observaciones,
+                c.idcelular, c.imei, c.serie,
+                m.marca,
+                mo.modelo,
+                ch.nrolinea,
+                mot.motivo
+            FROM celxresp cr
+            JOIN celular c   ON c.idcelular = cr.idcelular
+            JOIN marca m     ON m.idmarca   = c.idmarca
+            LEFT JOIN modelo mo ON mo.idmarca = c.idmarca AND mo.idmodelo = c.idmodelo
+            LEFT JOIN chip ch   ON ch.idchip = cr.idchip
+            LEFT JOIN motivo mot ON mot.idmotivo = cr.idmotivo
+            WHERE cr.idresponsable = :idresponsable
+            ORDER BY cr.desde DESC, cr.id DESC
+        """), {'idresponsable': resp_f}).fetchall()
+        asignaciones = rows
+
+    return render_template('reportes/por_responsable.html',
+        responsables=responsables, responsable_sel=responsable_sel,
+        resp_f=resp_f, asignaciones=asignaciones)
+
+
 def _estilo_encabezado(ws, fila, columnas):
     """Aplica estilo de encabezado a una fila."""
     fill   = PatternFill('solid', fgColor='2C3E50')

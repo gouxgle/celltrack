@@ -415,6 +415,12 @@
             Por Localidad
             <span class="ct-nav-dot"></span>
         </a>
+        <a class="ct-nav-link {% if request.endpoint == 'reportes.por_responsable' %}active{% endif %}"
+           href="{{ url_for('reportes.por_responsable') }}">
+            <span class="ct-nav-icon"><i class="fas fa-user-tag"></i></span>
+            Por Responsable
+            <span class="ct-nav-dot"></span>
+        </a>
 
         <div class="ct-nav-section">Sistema</div>
         <a class="ct-nav-link {% if request.blueprint == 'auditoria' %}active{% endif %}"

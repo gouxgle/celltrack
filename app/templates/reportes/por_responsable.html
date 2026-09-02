@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}CellTrack - Celulares por Responsable{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 style="color: var(--ct-blue);">
+        <i class="fas fa-user-tag"></i> Celulares por Responsable
+    </h4>
+    <div class="d-flex gap-2">
+        {% if resp_f %}
+        <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-print"></i> Imprimir
+        </button>
+        {% endif %}
+        <a href="{{ url_for('reportes.index') }}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-chart-bar"></i> Facturación
+        </a>
+    </div>
+</div>
+
+<!-- Filtro responsable -->
+<form method="get" class="d-flex align-items-center gap-2 mb-3">
+    <label class="text-muted small mb-0" style="white-space:nowrap;">Responsable:</label>
+    <select name="responsable" class="form-select form-select-sm" style="max-width:280px;" onchange="this.form.submit()">
+        <option value="">— Seleccionar —</option>
+        {% for r in responsables %}
+        <option value="{{ r.idresponsable }}" {% if resp_f == r.idresponsable %}selected{% endif %}>
+            {{ r.responsable }}
+        </option>
+        {% endfor %}
+    </select>
+    {% if resp_f %}
+    <a href="{{ url_for('reportes.por_responsable') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-times"></i> Limpiar
+    </a>
+    {% endif %}
+</form>
+
+{% if resp_f %}
+    {% if responsable_sel %}
+    <div class="card mb-3">
+        <div class="card-body py-2 d-flex gap-4 flex-wrap align-items-center">
+            <div>
+                <span class="text-muted small">Responsable</span>
+                <div class="fw-bold">{{ responsable_sel.responsable }}</div>
+            </div>
+            <div>
+                <span class="text-muted small">Localidad</span>
+                <div class="fw-bold">{{ responsable_sel.localidad_rel.localidad if responsable_sel.localidad_rel else '-' }}</div>
+            </div>
+            <div>
+                <span class="text-muted small">Sector</span>
+                <div class="fw-bold">{{ responsable_sel.sector_rel.sector if responsable_sel.sector_rel else '-' }}</div>
+            </div>
+            <div>
+                <span class="text-muted small">Total asignaciones</span>
+                <div class="fw-bold">{{ asignaciones|length }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center py-2"
+             style="background: var(--ct-blue); color: white;">
+            <strong><i class="fas fa-mobile-alt me-1"></i> Historial de celulares asignados</strong>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Marca / Modelo</th>
+                            <th>IMEI</th>
+                            <th>Serie</th>
+                            <th>Chip / Línea</th>
+                            <th>Desde</th>
+                            <th>Hasta</th>
+                            <th>Condición</th>
+                            <th>Motivo</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for a in asignaciones %}
+                    <tr class="{{ 'table-light text-muted' if a.hasta else '' }}">
+                        <td>
+                            <a href="{{ url_for('celulares.ver', id=a.idcelular) }}" class="text-decoration-none fw-bold">
+                                {{ a.marca }} {{ a.modelo or '' }}
+                            </a>
+                        </td>
+                        <td class="small">{{ a.imei }}</td>
+                        <td class="small">{{ a.serie or '-' }}</td>
+                        <td class="small">{{ a.nrolinea or '-' }}</td>
+                        <td class="small">{{ a.desde or '-' }}</td>
+                        <td class="small">{{ a.hasta or '-' }}</td>
+                        <td class="small">{{ a.condicion or '-' }}</td>
+                        <td class="small">{{ a.motivo or '-' }}</td>
+                        <td>
+                            {% if not a.hasta %}
+                                <span class="badge badge-activo">Activo</span>
+                            {% else %}
+                                <span class="badge badge-baja">Finalizado</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if not asignaciones %}
+    <div class="alert alert-info mt-3">
+        <i class="fas fa-info-circle me-1"></i>
+        Este responsable no tiene celulares asignados históricamente.
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle me-1"></i>
+        Responsable no encontrado.
+    </div>
+    {% endif %}
+{% else %}
+<div class="alert alert-info">
+    <i class="fas fa-info-circle me-1"></i>
+    Elegí un responsable para ver el historial de celulares asignados.
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+@media print {
+    .btn, nav, .sidebar, footer { display: none !important; }
+    .card { break-inside: avoid; }
+    .card-header { background: #2c3e50 !important; color: white !important; -webkit-print-color-adjust: exact; }
+}
+</style>
+{% endblock %}
